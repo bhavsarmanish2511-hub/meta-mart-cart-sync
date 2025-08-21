@@ -24,7 +24,7 @@ const Index = () => {
               </span>
             </h1>
             <h2 className="text-2xl md:text-4xl font-semibold text-primary mb-4">
-              Grocery Shopping in 2035
+              The Future of Grocery Shopping
             </h2>
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
               Experience the future of shopping in the metaverse with AI assistants, 

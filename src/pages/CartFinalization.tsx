@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, Plus, Minus, Trash2, Bot, ShoppingBag } from 'lucide-react';
 import { useCart } from '@/contexts/CartContext';
+import KarenRecommendations from '@/components/KarenRecommendations';
 
 const CartFinalization = () => {
   const navigate = useNavigate();
@@ -13,12 +14,6 @@ const CartFinalization = () => {
   const handleQuantityChange = (id: string, newQuantity: number) => {
     updateQuantity(id, newQuantity);
   };
-
-  const karenSuggestions = [
-    { name: 'Organic Honey', price: 8.99, reason: 'Perfect complement to your tofu recipes!' },
-    { name: 'Sesame Oil', price: 6.49, reason: 'Great for Asian-inspired cooking' },
-    { name: 'Ginger Root', price: 3.99, reason: 'Adds flavor and has health benefits' }
-  ];
 
   return (
     <div className="min-h-screen bg-background cyber-grid p-6 aspect-16-9">
@@ -138,43 +133,8 @@ const CartFinalization = () => {
 
           {/* Karen AI Assistant & Summary */}
           <div className="space-y-6">
-            {/* AI Assistant */}
-            <Card className="glass-card border-accent/20">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-accent">
-                  <Bot className="w-5 h-5" />
-                  Karen - AI Assistant
-                </CardTitle>
-                <CardDescription>
-                  Smart recommendations based on your cart
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <p className="text-sm text-muted-foreground">
-                  Hi! I noticed you have some great items. Here are some complementary products that other customers loved:
-                </p>
-                
-                {karenSuggestions.map((suggestion, index) => (
-                  <Card key={index} className="bg-muted/20 border-accent/10">
-                    <CardContent className="p-3">
-                      <div className="flex justify-between items-start mb-2">
-                        <h4 className="font-medium text-sm">{suggestion.name}</h4>
-                        <span className="text-sm font-bold text-primary">
-                          ${suggestion.price}
-                        </span>
-                      </div>
-                      <p className="text-xs text-muted-foreground mb-2">
-                        {suggestion.reason}
-                      </p>
-                      <Button size="sm" variant="outline" className="w-full">
-                        <Plus className="w-3 h-3 mr-1" />
-                        Add to Cart
-                      </Button>
-                    </CardContent>
-                  </Card>
-                ))}
-              </CardContent>
-            </Card>
+            {/* Karen's Recommendations */}
+            <KarenRecommendations />
 
             {/* Cart Summary */}
             <Card className="glass-card">

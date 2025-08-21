@@ -109,7 +109,7 @@ const SupplyChain = () => {
         {/* Blockchain Timeline */}
         <div className="space-y-6">
           <h2 className="text-2xl font-bold text-center mb-8 glow-text">
-            Blockchain-Verified Journey
+            Blockchain-Verified Journey (2035)
           </h2>
           
           {supplyChainSteps.map((step, index) => {
@@ -118,13 +118,13 @@ const SupplyChain = () => {
               <div key={step.id} className="relative">
                 {/* Connector Line */}
                 {index < supplyChainSteps.length - 1 && (
-                  <div className="absolute left-8 top-16 w-0.5 h-16 bg-gradient-neon opacity-50" />
+                  <div className="absolute left-6 top-14 w-0.5 h-16 bg-gradient-neon opacity-50" />
                 )}
                 
-                <Card className="glass-card hover:shadow-neon transition-all duration-300 ml-16">
-                  <div className="absolute -left-8 top-6">
-                    <div className="w-16 h-16 bg-gradient-cyber rounded-full flex items-center justify-center shadow-cyber">
-                      <Icon className="w-8 h-8 text-background" />
+                <Card className="glass-card hover:shadow-neon transition-all duration-300 ml-12">
+                  <div className="absolute -left-6 top-4">
+                    <div className="w-12 h-12 bg-gradient-cyber rounded-full flex items-center justify-center shadow-cyber">
+                      <Icon className="w-6 h-6 text-background" />
                     </div>
                   </div>
                   

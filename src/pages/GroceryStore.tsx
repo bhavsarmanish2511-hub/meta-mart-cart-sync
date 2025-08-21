@@ -3,9 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import groceryStoreScene from '@/assets/grocery-store-scene.jpg';
 import { QrCode } from 'lucide-react';
+import { useDefaultCart } from '@/hooks/useDefaultCart';
 
 const GroceryStore = () => {
   const navigate = useNavigate();
+  
+  // Load default cart items when component mounts
+  useDefaultCart();
 
   const handleQRClick = () => {
     navigate('/product/tofu');
@@ -30,7 +34,7 @@ const GroceryStore = () => {
         {/* Header */}
         <header className="glass-card m-6 p-4">
           <div className="flex justify-between items-center">
-            <h1 className="text-2xl font-bold glow-text">MetaMart 2035</h1>
+            <h1 className="text-2xl font-bold glow-text">MetaMart</h1>
             <Button 
               onClick={handleDashboardClick}
               className="cyber-button"
@@ -40,35 +44,27 @@ const GroceryStore = () => {
           </div>
         </header>
 
-        {/* Interactive Elements */}
+        {/* Highlighted Tofu Product with QR Code */}
         <div className="flex-1 flex items-center justify-center relative">
-          {/* QR Code Hotspot - Positioned where the tofu QR would be */}
+          {/* QR Code Hotspot - Positioned prominently */}
           <div className="absolute bottom-1/3 right-1/3 transform translate-x-1/2">
             <div 
               onClick={handleQRClick}
-              className="qr-pulse glass-card p-4 cursor-pointer group"
+              className="qr-pulse glass-card p-6 cursor-pointer group hover:scale-110 transition-all duration-300"
             >
-              <QrCode className="w-16 h-16 text-primary group-hover:text-accent transition-colors" />
-              <p className="text-sm mt-2 text-center glow-text">DPP Info</p>
+              <QrCode className="w-20 h-20 text-primary group-hover:text-accent transition-colors glow-text" />
+              <p className="text-sm mt-3 text-center glow-text font-semibold">
+                Scan Tofu DPP
+              </p>
+              <div className="absolute -top-2 -right-2 w-4 h-4 bg-accent rounded-full animate-ping"></div>
             </div>
           </div>
 
-          {/* Instructions */}
-          <div className="glass-card p-6 max-w-md">
-            <h2 className="text-xl font-semibold mb-4 glow-text">Welcome to MetaMart</h2>
-            <p className="text-muted-foreground mb-4">
-              Experience the future of grocery shopping in the metaverse. Hannah is scanning products with digital product passports.
+          {/* Hannah Information */}
+          <div className="absolute bottom-10 left-10 glass-card p-4 max-w-sm">
+            <p className="text-sm text-muted-foreground">
+              <span className="text-accent font-semibold">Hannah</span> is exploring product transparency with Digital Product Passports
             </p>
-            <p className="text-accent mb-4">
-              Click on the glowing QR code to explore the tofu's digital product passport!
-            </p>
-            <Button 
-              onClick={handleDashboardClick}
-              variant="outline"
-              className="w-full neon-border hover:bg-primary/10"
-            >
-              Start Shopping
-            </Button>
           </div>
         </div>
 

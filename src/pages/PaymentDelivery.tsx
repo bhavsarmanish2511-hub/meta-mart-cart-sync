@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { useCart } from '@/contexts/CartContext';
 import { toast } from 'sonner';
+import OrderTracking from '@/components/OrderTracking';
 
 const PaymentDelivery = () => {
   const navigate = useNavigate();
@@ -27,6 +28,8 @@ const PaymentDelivery = () => {
   const [selectedPayment, setSelectedPayment] = useState('');
   const [selectedDelivery, setSelectedDelivery] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
+  const [orderCompleted, setOrderCompleted] = useState(false);
+  const [orderId, setOrderId] = useState('');
 
   const paymentMethods = [
     {
@@ -105,20 +108,43 @@ const PaymentDelivery = () => {
     // Simulate payment processing
     await new Promise(resolve => setTimeout(resolve, 3000));
     
+    // Generate order ID
+    const newOrderId = `MM${Date.now().toString().slice(-6)}`;
+    setOrderId(newOrderId);
+    
     toast.success('Order placed successfully!', {
       description: `Your order will be ${selectedDeliveryOption?.name.toLowerCase()} in ${selectedDeliveryOption?.time}`
     });
     
-    clearCart();
     setIsProcessing(false);
-    
-    // Navigate back to store or show confirmation
-    setTimeout(() => {
-      navigate('/grocery-store');
-    }, 2000);
+    setOrderCompleted(true);
   };
 
-  if (items.length === 0 && !isProcessing) {
+  if (orderCompleted) {
+    return (
+      <div className="min-h-screen bg-background cyber-grid p-6 aspect-16-9">
+        <OrderTracking 
+          orderId={orderId}
+          deliveryMethod={selectedDelivery}
+          totalAmount={finalTotal}
+          items={items}
+        />
+        <div className="max-w-4xl mx-auto mt-6 text-center">
+          <Button 
+            onClick={() => {
+              clearCart();
+              navigate('/');
+            }}
+            className="cyber-button"
+          >
+            Return to Store
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  if (items.length === 0 && !isProcessing && !orderCompleted) {
     return (
       <div className="min-h-screen bg-background cyber-grid flex items-center justify-center">
         <Card className="glass-card">
@@ -161,7 +187,7 @@ const PaymentDelivery = () => {
                 Payment Method
               </CardTitle>
               <CardDescription>
-                Choose your preferred payment method for 2035
+                Choose your preferred payment method
               </CardDescription>
             </CardHeader>
             <CardContent>
