@@ -93,14 +93,16 @@ const ProductDetails = () => {
             </Card>
 
             {/* Allergies */}
-            <Card className="glass-card border-destructive/20">
-              <CardHeader>
-                <CardTitle className="text-destructive">Allergen Information</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground">{product.allergies}</p>
-              </CardContent>
-            </Card>
+            {product.allergies && (
+              <Card className="glass-card border-purple-400/20">
+                <CardHeader>
+                  <CardTitle className="text-purple-400">Allergen Information</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-purple-400">{product.allergies}</p>
+                </CardContent>
+              </Card>
+            )}
 
             {/* ESG Info */}
             <Card className="glass-card border-accent/20">

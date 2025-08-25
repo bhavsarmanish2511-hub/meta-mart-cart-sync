@@ -2,6 +2,7 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { QrCode, MapPin, Truck, Plane, CheckCircle, Clock } from 'lucide-react';
+import smartCartImage from '@/assets/futuristic-smart-cart-2035.jpg';
 
 interface OrderTrackingProps {
   orderId: string;
@@ -90,13 +91,27 @@ const OrderTracking: React.FC<OrderTrackingProps> = ({
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="h-64 bg-muted/20 rounded-lg flex items-center justify-center mb-4">
-              <div className="text-center">
-                <MapPin className="w-16 h-16 text-primary mx-auto mb-4" />
-                <p className="text-muted-foreground">
-                  {isDrone ? 'Drone preparing for departure...' : 'Vehicle being loaded...'}
+            <div className="h-64 bg-gradient-to-br from-primary/10 to-accent/10 rounded-lg flex items-center justify-center mb-4 relative overflow-hidden">
+              {/* Animated Map Background */}
+              <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-accent/5 to-primary/5 animate-pulse"></div>
+              <div className="absolute top-4 left-4 w-2 h-2 bg-accent rounded-full animate-ping"></div>
+              <div className="absolute bottom-6 right-6 w-2 h-2 bg-primary rounded-full animate-ping"></div>
+              <div className="absolute top-1/2 left-1/3 w-1 h-1 bg-accent/60 rounded-full animate-pulse"></div>
+              
+              {/* Smart Cart Image */}
+              <div className="relative z-10 text-center">
+                <img 
+                  src={smartCartImage} 
+                  alt="Futuristic Smart Cart" 
+                  className="w-24 h-16 object-cover rounded-lg mx-auto mb-4 shadow-lg"
+                />
+                <p className="text-muted-foreground text-sm">
+                  {isDrone ? 'Drone preparing for departure...' : 'Smart cart being loaded...'}
                 </p>
               </div>
+              
+              {/* Animated Route Line */}
+              <div className="absolute top-1/2 left-8 w-32 h-0.5 bg-gradient-to-r from-primary to-accent opacity-60 animate-pulse"></div>
             </div>
             <div className="flex justify-center">
               <Badge variant="secondary" className="text-accent">

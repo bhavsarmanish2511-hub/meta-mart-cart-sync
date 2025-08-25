@@ -5,18 +5,17 @@ export const PRODUCTS: Omit<CartItem, 'quantity'>[] = [
   {
     id: 'onions',
     name: 'Onions',
-    price: 2.99,
+    price: 12.99,
     priceUnit: 'per kg',
     category: 'Vegetables',
     quantityUnit: 'kg',
     description: 'Fresh organic onions, rich in antioxidants and flavor compounds.',
-    nutrition: 'Low in calories, high in vitamin C and fiber',
-    allergies: 'None known'
+    nutrition: 'Low in calories, high in vitamin C and fiber'
   },
   {
     id: 'avocado',
     name: 'Avocado',
-    price: 4.99,
+    price: 24.99,
     priceUnit: 'per kg',
     category: 'Vegetables',
     quantityUnit: 'kg',
@@ -27,75 +26,69 @@ export const PRODUCTS: Omit<CartItem, 'quantity'>[] = [
   {
     id: 'tomatoes',
     name: 'Tomatoes',
-    price: 3.49,
+    price: 18.49,
     priceUnit: 'per kg',
     category: 'Vegetables',
     quantityUnit: 'kg',
     description: 'Vine-ripened tomatoes with exceptional flavor.',
-    nutrition: 'High in lycopene, vitamin C, and folate',
-    allergies: 'None known'
+    nutrition: 'High in lycopene, vitamin C, and folate'
   },
   {
     id: 'lettuce',
     name: 'Lettuce',
-    price: 2.29,
+    price: 8.29,
     priceUnit: 'per head',
     category: 'Vegetables',
     quantityUnit: 'heads',
     description: 'Crisp romaine lettuce, hydroponically grown.',
-    nutrition: 'Low calories, high in vitamins A and K',
-    allergies: 'None known'
+    nutrition: 'Low calories, high in vitamins A and K'
   },
   {
     id: 'spinach',
     name: 'Spinach',
-    price: 3.99,
+    price: 15.99,
     priceUnit: 'per bag',
     category: 'Vegetables',
     quantityUnit: 'bags',
     description: 'Baby spinach leaves, perfect for salads and smoothies.',
-    nutrition: 'Excellent source of iron, vitamins A, C, and K',
-    allergies: 'None known'
+    nutrition: 'Excellent source of iron, vitamins A, C, and K'
   },
   {
     id: 'bell-peppers',
     name: 'Bell Peppers',
-    price: 5.99,
+    price: 22.99,
     priceUnit: 'per kg',
     category: 'Vegetables',
     quantityUnit: 'kg',
     description: 'Colorful bell peppers, sweet and crunchy.',
-    nutrition: 'Very high in vitamin C, antioxidants',
-    allergies: 'None known'
+    nutrition: 'Very high in vitamin C, antioxidants'
   },
   {
     id: 'broccoli',
     name: 'Broccoli',
-    price: 4.49,
+    price: 19.49,
     priceUnit: 'per kg',
     category: 'Vegetables',
     quantityUnit: 'kg',
     description: 'Fresh broccoli crowns, nutrient-dense superfood.',
-    nutrition: 'High in fiber, vitamin C, and sulforaphane',
-    allergies: 'None known'
+    nutrition: 'High in fiber, vitamin C, and sulforaphane'
   },
   {
     id: 'carrots',
     name: 'Carrots',
-    price: 2.79,
+    price: 14.79,
     priceUnit: 'per kg',
     category: 'Vegetables',
     quantityUnit: 'kg',
     description: 'Sweet baby carrots, perfect for snacking.',
-    nutrition: 'Rich in beta-carotene and fiber',
-    allergies: 'None known'
+    nutrition: 'Rich in beta-carotene and fiber'
   },
 
   // Groceries
   {
     id: 'milk',
     name: 'Milk',
-    price: 3.99,
+    price: 16.99,
     priceUnit: 'per liter',
     category: 'Groceries',
     quantityUnit: 'liters',
@@ -106,51 +99,47 @@ export const PRODUCTS: Omit<CartItem, 'quantity'>[] = [
   {
     id: 'lentils',
     name: 'Lentils',
-    price: 4.99,
+    price: 21.99,
     priceUnit: 'per kg',
     category: 'Groceries',
     quantityUnit: 'kg',
     description: 'Organic red lentils, high in plant protein.',
-    nutrition: 'Rich in protein, fiber, and iron',
-    allergies: 'None known'
+    nutrition: 'Rich in protein, fiber, and iron'
   },
   {
     id: 'spices',
     name: 'Spices',
-    price: 6.99,
+    price: 28.99,
     priceUnit: 'per pack',
     category: 'Groceries',
     quantityUnit: 'packs',
     description: 'Mixed spice collection with turmeric, cumin, and coriander.',
-    nutrition: 'Rich in antioxidants and anti-inflammatory compounds',
-    allergies: 'None known'
+    nutrition: 'Rich in antioxidants and anti-inflammatory compounds'
   },
   {
     id: 'sugar',
     name: 'Sugar',
-    price: 2.49,
+    price: 11.49,
     priceUnit: 'per kg',
     category: 'Groceries',
     quantityUnit: 'kg',
     description: 'Organic cane sugar for baking and cooking.',
-    nutrition: 'Pure carbohydrates for energy',
-    allergies: 'None known'
+    nutrition: 'Pure carbohydrates for energy'
   },
   {
     id: 'salt',
     name: 'Salt',
-    price: 1.99,
+    price: 7.99,
     priceUnit: 'per pack',
     category: 'Groceries',
     quantityUnit: 'packs',
     description: 'Sea salt with natural minerals.',
-    nutrition: 'Essential electrolytes and minerals',
-    allergies: 'None known'
+    nutrition: 'Essential electrolytes and minerals'
   },
   {
     id: 'honey',
     name: 'Honey',
-    price: 8.99,
+    price: 35.99,
     priceUnit: 'per jar',
     category: 'Groceries',
     quantityUnit: 'jars',
@@ -161,29 +150,27 @@ export const PRODUCTS: Omit<CartItem, 'quantity'>[] = [
   {
     id: 'sauces',
     name: 'Sauces',
-    price: 5.49,
+    price: 23.49,
     priceUnit: 'per bottle',
     category: 'Groceries',
     quantityUnit: 'bottles',
     description: 'Organic tomato sauce with herbs.',
-    nutrition: 'Rich in lycopene and vitamin C',
-    allergies: 'None known'
+    nutrition: 'Rich in lycopene and vitamin C'
   },
   {
     id: 'baking-powder',
     name: 'Baking Powder',
-    price: 3.49,
+    price: 13.49,
     priceUnit: 'per pack',
     category: 'Groceries',
     quantityUnit: 'packs',
     description: 'Double-acting baking powder for perfect baking.',
-    nutrition: 'Leavening agent for baking',
-    allergies: 'None known'
+    nutrition: 'Leavening agent for baking'
   },
   {
     id: 'oats',
     name: 'Oats',
-    price: 4.49,
+    price: 18.49,
     priceUnit: 'per kg',
     category: 'Groceries',
     quantityUnit: 'kg',
@@ -194,7 +181,7 @@ export const PRODUCTS: Omit<CartItem, 'quantity'>[] = [
   {
     id: 'bread',
     name: 'Bread',
-    price: 3.99,
+    price: 15.99,
     priceUnit: 'per loaf',
     category: 'Groceries',
     quantityUnit: 'loaves',
@@ -205,7 +192,7 @@ export const PRODUCTS: Omit<CartItem, 'quantity'>[] = [
   {
     id: 'ai-breakfast-cereals',
     name: 'AI Breakfast Cereals',
-    price: 7.99,
+    price: 32.99,
     priceUnit: 'per box',
     category: 'Groceries',
     quantityUnit: 'boxes',
@@ -216,18 +203,17 @@ export const PRODUCTS: Omit<CartItem, 'quantity'>[] = [
   {
     id: 'sustainable-rice-pack',
     name: 'Sustainable Rice Pack',
-    price: 6.99,
+    price: 28.99,
     priceUnit: 'per pack',
     category: 'Groceries',
     quantityUnit: 'packs',
     description: 'Eco-friendly rice packaging with carbon-neutral farming.',
-    nutrition: 'Complex carbohydrates and B vitamins',
-    allergies: 'None known'
+    nutrition: 'Complex carbohydrates and B vitamins'
   },
   {
     id: 'eggs',
     name: 'Eggs',
-    price: 4.99,
+    price: 19.99,
     priceUnit: 'per dozen',
     category: 'Groceries',
     quantityUnit: 'dozens',
@@ -238,7 +224,7 @@ export const PRODUCTS: Omit<CartItem, 'quantity'>[] = [
   {
     id: 'greek-yogurt',
     name: 'Greek Yogurt',
-    price: 5.99,
+    price: 24.99,
     priceUnit: 'per container',
     category: 'Groceries',
     quantityUnit: 'containers',
@@ -249,7 +235,7 @@ export const PRODUCTS: Omit<CartItem, 'quantity'>[] = [
   {
     id: 'butter',
     name: 'Butter',
-    price: 6.49,
+    price: 26.49,
     priceUnit: 'per pack',
     category: 'Groceries',
     quantityUnit: 'packs',
@@ -260,7 +246,7 @@ export const PRODUCTS: Omit<CartItem, 'quantity'>[] = [
   {
     id: 'cheese',
     name: 'Cheese',
-    price: 8.99,
+    price: 36.99,
     priceUnit: 'per block',
     category: 'Groceries',
     quantityUnit: 'blocks',
@@ -271,29 +257,27 @@ export const PRODUCTS: Omit<CartItem, 'quantity'>[] = [
   {
     id: 'fresh-herbs',
     name: 'Fresh Herbs',
-    price: 2.99,
+    price: 12.99,
     priceUnit: 'per pack',
     category: 'Groceries',
     quantityUnit: 'packs',
     description: 'Mixed fresh herbs including basil, parsley, and cilantro.',
-    nutrition: 'Rich in antioxidants and vitamins',
-    allergies: 'None known'
+    nutrition: 'Rich in antioxidants and vitamins'
   },
   {
     id: 'basmati-rice',
     name: 'Basmati Rice',
-    price: 7.99,
+    price: 32.99,
     priceUnit: 'per kg',
     category: 'Groceries',
     quantityUnit: 'kg',
     description: 'Premium long-grain basmati rice, aromatic and fluffy.',
-    nutrition: 'Good source of carbohydrates and B vitamins',
-    allergies: 'Gluten-free'
+    nutrition: 'Good source of carbohydrates and B vitamins'
   },
   {
     id: 'tofu',
     name: 'Premium Organic Tofu',
-    price: 4.99,
+    price: 19.99,
     priceUnit: 'per pack',
     category: 'Groceries',
     quantityUnit: 'packs',
@@ -304,7 +288,7 @@ export const PRODUCTS: Omit<CartItem, 'quantity'>[] = [
   {
     id: 'whole-wheat-flour',
     name: 'Whole Wheat Flour',
-    price: 3.99,
+    price: 16.99,
     priceUnit: 'per kg',
     category: 'Groceries',
     quantityUnit: 'kg',
@@ -315,7 +299,7 @@ export const PRODUCTS: Omit<CartItem, 'quantity'>[] = [
   {
     id: 'pasta',
     name: 'Pasta',
-    price: 2.99,
+    price: 12.99,
     priceUnit: 'per pack',
     category: 'Groceries',
     quantityUnit: 'packs',
@@ -328,86 +312,79 @@ export const PRODUCTS: Omit<CartItem, 'quantity'>[] = [
   {
     id: 'apple-juice',
     name: 'Nutrient-Rich Apple Juice',
-    price: 4.49,
+    price: 18.49,
     priceUnit: 'per bottle',
     category: 'Beverages',
     quantityUnit: 'bottles',
     description: 'Cold-pressed apple juice with no added sugars.',
-    nutrition: 'Natural vitamins and antioxidants from fresh apples',
-    allergies: 'None known'
+    nutrition: 'Natural vitamins and antioxidants from fresh apples'
   },
   {
     id: 'green-tea',
     name: 'Green Tea',
-    price: 8.99,
+    price: 36.99,
     priceUnit: 'per box',
     category: 'Beverages',
     quantityUnit: 'boxes',
     description: 'Premium organic green tea with antioxidants.',
-    nutrition: 'Rich in catechins and natural caffeine',
-    allergies: 'None known'
+    nutrition: 'Rich in catechins and natural caffeine'
   },
   {
     id: 'sparkling-water',
     name: 'Sparkling Water',
-    price: 2.99,
+    price: 12.99,
     priceUnit: 'per bottle',
     category: 'Beverages',
     quantityUnit: 'bottles',
     description: 'Natural sparkling water with mineral content.',
-    nutrition: 'Zero calories, natural minerals',
-    allergies: 'None known'
+    nutrition: 'Zero calories, natural minerals'
   },
   {
     id: 'juice-boxes',
     name: 'Juice Boxes',
-    price: 5.99,
+    price: 24.99,
     priceUnit: 'per pack',
     category: 'Beverages',
     quantityUnit: 'packs',
     description: 'Convenient juice boxes, perfect for kids.',
-    nutrition: 'Fortified with vitamin C',
-    allergies: 'None known'
+    nutrition: 'Fortified with vitamin C'
   },
   {
     id: 'orange-juice',
     name: 'Orange Juice',
-    price: 3.99,
+    price: 16.99,
     priceUnit: 'per carton',
     category: 'Beverages',
     quantityUnit: 'cartons',
     description: 'Fresh squeezed orange juice, pulp-free.',
-    nutrition: 'High in vitamin C and folate',
-    allergies: 'None known'
+    nutrition: 'High in vitamin C and folate'
   },
   {
     id: 'tea',
     name: 'Tea',
-    price: 6.99,
+    price: 28.99,
     priceUnit: 'per box',
     category: 'Beverages',
     quantityUnit: 'boxes',
     description: 'Premium black tea blend with aromatic herbs.',
-    nutrition: 'Contains antioxidants and minimal caffeine',
-    allergies: 'None known'
+    nutrition: 'Contains antioxidants and minimal caffeine'
   },
   {
     id: 'coffee',
     name: 'Coffee',
-    price: 12.99,
+    price: 52.99,
     priceUnit: 'per bag',
     category: 'Beverages',
     quantityUnit: 'bags',
     description: 'Single-origin coffee beans, medium roast.',
-    nutrition: 'Natural caffeine and antioxidants',
-    allergies: 'None known'
+    nutrition: 'Natural caffeine and antioxidants'
   },
 
   // Consumables
   {
     id: 'kids-snacks',
     name: 'Kids Snacks',
-    price: 4.99,
+    price: 19.99,
     priceUnit: 'per pack',
     category: 'Consumables',
     quantityUnit: 'packs',
@@ -418,29 +395,27 @@ export const PRODUCTS: Omit<CartItem, 'quantity'>[] = [
   {
     id: 'strawberries',
     name: 'Strawberries',
-    price: 6.99,
+    price: 28.99,
     priceUnit: 'per pack',
     category: 'Consumables',
     quantityUnit: 'packs',
     description: 'Fresh organic strawberries, sweet and juicy.',
-    nutrition: 'High in vitamin C and antioxidants',
-    allergies: 'None known'
+    nutrition: 'High in vitamin C and antioxidants'
   },
   {
     id: 'freeze-dried-banana-snacks',
     name: 'Freeze-Dried Banana Snacks',
-    price: 7.99,
+    price: 32.99,
     priceUnit: 'per pack',
     category: 'Consumables',
     quantityUnit: 'packs',
     description: 'Crunchy freeze-dried banana chips, no added sugar.',
-    nutrition: 'High in potassium and natural fiber',
-    allergies: 'None known'
+    nutrition: 'High in potassium and natural fiber'
   },
   {
     id: 'probiotic-yogurt-cubes',
     name: 'Probiotic Yogurt Cubes',
-    price: 8.49,
+    price: 34.49,
     priceUnit: 'per pack',
     category: 'Consumables',
     quantityUnit: 'packs',
@@ -451,31 +426,29 @@ export const PRODUCTS: Omit<CartItem, 'quantity'>[] = [
   {
     id: 'chicken-breast',
     name: 'Chicken Breast',
-    price: 11.99,
+    price: 48.99,
     priceUnit: 'per kg',
     category: 'Consumables',
     quantityUnit: 'kg',
     description: 'Fresh, free-range chicken breast, hormone-free.',
-    nutrition: 'Lean protein source, low in fat',
-    allergies: 'None known'
+    nutrition: 'Lean protein source, low in fat'
   },
   {
     id: 'organic-apples',
     name: 'Organic Apples',
-    price: 5.49,
+    price: 22.49,
     priceUnit: 'per kg',
     category: 'Consumables',
     quantityUnit: 'kg',
     description: 'Crisp organic apples, pesticide-free.',
-    nutrition: 'High in fiber and vitamin C',
-    allergies: 'None known'
+    nutrition: 'High in fiber and vitamin C'
   },
 
   // Household & Cleaning
   {
     id: 'organic-baby-powder',
     name: 'Organic Baby Powder',
-    price: 8.99,
+    price: 36.99,
     priceUnit: 'per bottle',
     category: 'Household',
     quantityUnit: 'bottles',
@@ -486,18 +459,17 @@ export const PRODUCTS: Omit<CartItem, 'quantity'>[] = [
   {
     id: 'paper-towels',
     name: 'Paper Towels',
-    price: 5.99,
+    price: 24.99,
     priceUnit: 'per pack',
     category: 'Household',
     quantityUnit: 'packs',
     description: 'Eco-friendly paper towels made from recycled materials.',
-    nutrition: 'N/A',
-    allergies: 'None known'
+    nutrition: 'N/A'
   },
   {
     id: 'laundry-detergent',
     name: 'Laundry Detergent',
-    price: 12.99,
+    price: 52.99,
     priceUnit: 'per bottle',
     category: 'Household',
     quantityUnit: 'bottles',
@@ -508,7 +480,7 @@ export const PRODUCTS: Omit<CartItem, 'quantity'>[] = [
   {
     id: 'plasma-cleaning-spray',
     name: 'Plasma Cleaning Spray',
-    price: 18.99,
+    price: 78.99,
     priceUnit: 'per bottle',
     category: 'Household',
     quantityUnit: 'bottles',
@@ -519,7 +491,7 @@ export const PRODUCTS: Omit<CartItem, 'quantity'>[] = [
   {
     id: 'dish-soap',
     name: 'Dish Soap',
-    price: 4.99,
+    price: 20.99,
     priceUnit: 'per bottle',
     category: 'Household',
     quantityUnit: 'bottles',
@@ -530,7 +502,7 @@ export const PRODUCTS: Omit<CartItem, 'quantity'>[] = [
   {
     id: 'smart-cleaning-pods',
     name: 'Smart Cleaning Pods',
-    price: 15.99,
+    price: 65.99,
     priceUnit: 'per pack',
     category: 'Household',
     quantityUnit: 'packs',

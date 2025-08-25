@@ -40,23 +40,23 @@ const PaymentDelivery = () => {
       fee: 0
     },
     {
-      id: 'cbdc',
-      name: 'Central Bank Digital Currency',
-      description: 'Official digital dollar (CBDC)',
+      id: 'stablecoin',
+      name: 'StableCoin',
+      description: 'USDC - USD Coin stable cryptocurrency',
       icon: CreditCard,
       fee: 0
     },
     {
       id: 'defi',
       name: 'DeFi Protocol',
-      description: 'Decentralized finance payment',
+      description: 'ETH - Ethereum decentralized finance',
       icon: Coins,
       fee: 0.99
     },
     {
       id: 'crypto',
       name: 'Cryptocurrency',
-      description: 'Bitcoin, Ethereum, others',
+      description: 'BTC - Bitcoin and other cryptocurrencies',
       icon: Bitcoin,
       fee: 1.99
     }
@@ -68,7 +68,7 @@ const PaymentDelivery = () => {
       name: 'Drone Delivery',
       description: 'Ultra-fast delivery via autonomous drone',
       icon: Plane,
-      time: '15-30 mins',
+      time: 'Schedule',
       cost: 4.99,
       availability: 'Available'
     },
@@ -77,7 +77,7 @@ const PaymentDelivery = () => {
       name: 'Standard Delivery',
       description: 'Electric vehicle delivery',
       icon: Truck,
-      time: '2-4 hours',
+      time: 'Schedule',
       cost: 0,
       availability: 'Available'
     },
@@ -86,7 +86,7 @@ const PaymentDelivery = () => {
       name: 'Store Pickup',
       description: 'Collect at MetaMart location',
       icon: Store,
-      time: '30 mins',
+      time: 'Schedule',
       cost: 0,
       availability: 'Available'
     }
@@ -302,7 +302,7 @@ const PaymentDelivery = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               <div>
                 <h3 className="font-semibold mb-3">Items ({items.length})</h3>
-                <div className="space-y-2 max-h-48 overflow-y-auto">
+                <div className="space-y-2 max-h-48 overflow-y-auto bg-transparent">
                   {items.map(item => (
                     <div key={item.id} className="flex justify-between items-center py-2 border-b border-border/20">
                       <span className="text-sm">

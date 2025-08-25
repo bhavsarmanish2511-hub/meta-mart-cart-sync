@@ -164,7 +164,7 @@ const GroceryDashboard = () => {
                                 <strong>Nutrition:</strong> {product.nutrition}
                               </p>
                               {product.allergies && (
-                                <p className="text-xs text-destructive mb-3">
+                                <p className="text-xs text-purple-400 mb-3">
                                   <strong>Allergies:</strong> {product.allergies}
                                 </p>
                               )}

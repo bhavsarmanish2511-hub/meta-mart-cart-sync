@@ -1,7 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import groceryStoreScene from '@/assets/grocery-store-scene.jpg';
+import groceryStoreScene from '@/assets/grocery-store-hannah-scanning.jpg';
 import { QrCode } from 'lucide-react';
 import { useDefaultCart } from '@/hooks/useDefaultCart';
 
@@ -46,7 +46,7 @@ const GroceryStore = () => {
 
         {/* Highlighted Tofu Product with QR Code */}
         <div className="flex-1 flex items-center justify-center relative">
-          {/* QR Code Hotspot - Positioned prominently */}
+          {/* Main Tofu QR Code Hotspot - Positioned prominently */}
           <div className="absolute bottom-1/3 right-1/3 transform translate-x-1/2">
             <div 
               onClick={handleQRClick}
@@ -60,11 +60,17 @@ const GroceryStore = () => {
             </div>
           </div>
 
-          {/* Hannah Information */}
-          <div className="absolute bottom-10 left-10 glass-card p-4 max-w-sm">
-            <p className="text-sm text-muted-foreground">
-              <span className="text-accent font-semibold">Hannah</span> is exploring product transparency with Digital Product Passports
-            </p>
+          {/* Additional QR codes on other products for consistency */}
+          <div className="absolute top-1/4 left-1/4">
+            <div className="glass-card p-2 opacity-60 hover:opacity-100 transition-opacity">
+              <QrCode className="w-6 h-6 text-muted-foreground" />
+            </div>
+          </div>
+          
+          <div className="absolute top-1/3 right-1/4">
+            <div className="glass-card p-2 opacity-60 hover:opacity-100 transition-opacity">
+              <QrCode className="w-6 h-6 text-muted-foreground" />
+            </div>
           </div>
         </div>
 

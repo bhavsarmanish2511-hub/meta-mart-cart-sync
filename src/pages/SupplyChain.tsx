@@ -16,7 +16,7 @@ const SupplyChain = () => {
       id: 1,
       title: 'Organic Farm - Oregon, USA',
       description: 'Non-GMO soybeans grown using sustainable farming practices',
-      date: '2024-01-15',
+      date: '2035-01-15',
       status: 'completed',
       hash: '0x1a2b3c...',
       icon: MapPin,
@@ -26,7 +26,7 @@ const SupplyChain = () => {
       id: 2,
       title: 'Processing Facility - Portland, OR',
       description: 'Soybeans processed into tofu using traditional methods',
-      date: '2024-01-18',
+      date: '2035-01-18',
       status: 'completed',
       hash: '0x4d5e6f...',
       icon: Factory,
@@ -36,7 +36,7 @@ const SupplyChain = () => {
       id: 3,
       title: 'Quality Control & Packaging',
       description: 'Product tested for quality and sustainably packaged',
-      date: '2024-01-19',
+      date: '2035-01-19',
       status: 'completed',
       hash: '0x7g8h9i...',
       icon: CheckCircle,
@@ -46,7 +46,7 @@ const SupplyChain = () => {
       id: 4,
       title: 'Distribution Center - Seattle, WA',
       description: 'Product shipped to regional distribution center',
-      date: '2024-01-20',
+      date: '2035-01-20',
       status: 'completed',
       hash: '0xjk1l2m...',
       icon: Truck,
@@ -56,7 +56,7 @@ const SupplyChain = () => {
       id: 5,
       title: 'MetaMart Retail Store',
       description: 'Product delivered to store and available for purchase',
-      date: '2024-01-22',
+      date: '2035-01-22',
       status: 'completed',
       hash: '0xn3o4p5...',
       icon: Store,
@@ -123,8 +123,8 @@ const SupplyChain = () => {
                 
                 <Card className="glass-card hover:shadow-neon transition-all duration-300 ml-12">
                   <div className="absolute -left-6 top-4">
-                    <div className="w-12 h-12 bg-gradient-cyber rounded-full flex items-center justify-center shadow-cyber">
-                      <Icon className="w-6 h-6 text-background" />
+                    <div className="w-8 h-8 bg-gradient-cyber rounded-full flex items-center justify-center shadow-cyber">
+                      <Icon className="w-4 h-4 text-background" />
                     </div>
                   </div>
                   

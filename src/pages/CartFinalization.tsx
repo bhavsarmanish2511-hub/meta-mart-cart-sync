@@ -75,11 +75,11 @@ const CartFinalization = () => {
                             <p className="text-sm text-muted-foreground mb-2">
                               <strong>Nutrition:</strong> {item.nutrition}
                             </p>
-                            {item.allergies && (
-                              <Badge variant="destructive" className="text-xs">
-                                Allergen: {item.allergies}
-                              </Badge>
-                            )}
+                              {item.allergies && (
+                                <Badge variant="outline" className="text-xs border-purple-400 text-purple-400">
+                                  Allergen: {item.allergies}
+                                </Badge>
+                              )}
                             <div className="flex items-center gap-4 mt-3">
                               <span className="font-bold text-primary">
                                 ${item.price} {item.priceUnit}
