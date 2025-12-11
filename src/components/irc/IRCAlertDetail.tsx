@@ -4,7 +4,7 @@ import {
   ArrowLeft, AlertTriangle, Brain, Play, Zap, GitBranch, FileText, MessageSquareWarning,
   CheckCircle, Clock, XCircle, Loader2, Shield, Target, Activity, Minus, X,
   Server, MapPin, DollarSign, ChevronRight, Pause, Users, UserCheck, Building2, Headphones, PhoneCall, PhoneForwarded, UserPlus, CircleDotDashed,
-  TrendingUp, Eye, ArrowRight, BarChart3
+  TrendingUp, Eye, ArrowRight, BarChart3, RotateCcw
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -13,7 +13,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
-import { cn, playHeliosNotification } from '@/lib/utils';
+import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { useWarRoom, ParticipantStatus, ParticipantType, WarRoomParticipant } from '@/hooks/useWarRoom';
@@ -21,6 +21,13 @@ import { useWarRoom, ParticipantStatus, ParticipantType, WarRoomParticipant } fr
 interface IRCAlertDetailProps {
   alert: IRCAlert;
   onBack: () => void;
+}
+
+interface ExecutionAgent {
+  name: string;
+  status: 'idle' | 'active' | 'completed';
+  currentTask: string;
+  progress: number;
 }
 
 const phaseLabels = {
@@ -32,15 +39,15 @@ const phaseLabels = {
 };
 
 const statusIcons = {
-  completed: <CheckCircle className="h-4 w-4 text-success" />,
-  'in-progress': <Loader2 className="h-4 w-4 text-warning animate-spin" />,
-  pending: <Clock className="h-4 w-4 text-muted-foreground" />,
-  blocked: <XCircle className="h-4 w-4 text-error" />,
+  completed: <CheckCircle className="h-3 w-3 text-success" />,
+  'in-progress': <Loader2 className="h-3 w-3 text-muted-foreground animate-spin" />,
+  pending: <Clock className="h-3 w-3 text-muted-foreground" />,
+  blocked: <XCircle className="h-3 w-3 text-error" />,
 };
 
 const riskColors = {
-  low: 'text-success border-success/30 bg-success/10',
-  medium: 'text-warning border-warning/30 bg-warning/10',
+  low: 'text-muted-foreground border-border/30 bg-muted/10',
+  medium: 'text-muted-foreground border-border/50 bg-muted/20',
   high: 'text-error border-error/30 bg-error/10',
 };
 
@@ -329,15 +336,15 @@ const allParticipants: WarRoomParticipant[] = [
 ];
 
 const typeConfig = {
-  approval: { name: 'Approval Chain', icon: <UserCheck className="h-4 w-4" /> },
-  coordination: { name: 'Team Coordination', icon: <Users className="h-4 w-4" /> },
+  approval: { name: 'Approval Chain', icon: <UserCheck className="h-3 w-3" /> },
+  coordination: { name: 'Team Coordination', icon: <Users className="h-3 w-3" /> },
 };
 
 const statusConfig: Record<ParticipantStatus, { text: string; icon: JSX.Element; color: string }> = {
-  pending: { text: 'Standby', icon: <CircleDotDashed className="h-3 w-3" />, color: 'bg-muted/80 border-muted-foreground/20' },
-  calling: { text: 'Calling...', icon: <PhoneCall className="h-3 w-3 animate-pulse" />, color: 'bg-primary/10 text-primary border-primary/30' },
-  joining: { text: 'Joining...', icon: <PhoneForwarded className="h-3 w-3" />, color: 'bg-primary/10 text-primary border-primary/30' },
-  joined: { text: 'Joined', icon: <CheckCircle className="h-3 w-3" />, color: 'bg-success/10 text-success border-success/30' },
+  pending: { text: 'Standby', icon: <CircleDotDashed className="h-2.5 w-2.5" />, color: 'bg-muted/80 border-muted-foreground/20' },
+  calling: { text: 'Calling...', icon: <PhoneCall className="h-2.5 w-2.5 animate-pulse" />, color: 'bg-muted/50 text-foreground border-border' },
+  joining: { text: 'Joining...', icon: <PhoneForwarded className="h-2.5 w-2.5" />, color: 'bg-muted/50 text-foreground border-border' },
+  joined: { text: 'Joined', icon: <CheckCircle className="h-2.5 w-2.5" />, color: 'bg-success/10 text-success border-success/30' },
 };
 
 export function IRCAlertDetail({ alert, onBack }: IRCAlertDetailProps) {
@@ -359,6 +366,7 @@ export function IRCAlertDetail({ alert, onBack }: IRCAlertDetailProps) {
   const [executionAgents, setExecutionAgents] = useState<ExecutionAgent[]>([]);
   const [executionProgress, setExecutionProgress] = useState(0);
   const [impactMetrics, setImpactMetrics] = useState<any>(null);
+  const [warRoomSimulationResults, setWarRoomSimulationResults] = useState<any>(null);
 
   const {
     isOpen: warRoomOpen,
@@ -521,10 +529,23 @@ export function IRCAlertDetail({ alert, onBack }: IRCAlertDetailProps) {
   };
 
   const handleEndWarRoom = useCallback(() => {
+    // Save simulation results before ending war room
+    if (showSimulationResults && simulationResults) {
+      setWarRoomSimulationResults(simulationResults);
+    }
     warRoomActions.resetState();
     setActiveTab('decision');
-    toast.info("War Room session has ended. You can now select another option.");
-  }, [warRoomActions, setActiveTab]);
+    toast.info("War Room session has ended. View your simulation results in the Decision tab.");
+  }, [warRoomActions, setActiveTab, showSimulationResults, simulationResults]);
+
+  const handleResetSimulation = useCallback(() => {
+    setSelectedStrategies([]);
+    setSimulationResults(null);
+    setShowSimulationResults(false);
+    setSimulationSteps([]);
+    setWarRoomSimulationResults(null);
+    toast.info("Simulation has been reset.");
+  }, []);
 
   const handleReturnToDashboard = useCallback(() => {
     closeWarRoomDialog();
@@ -770,220 +791,120 @@ export function IRCAlertDetail({ alert, onBack }: IRCAlertDetailProps) {
         </TabsContent>
 
         {/* Decision Tab - Updated with strategy selection */}
-        <TabsContent value="decision" className="mt-6 space-y-4">
+        <TabsContent value="decision" className="mt-4">
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Target className="h-5 w-5 text-warning" />
+            <CardHeader className="py-3">
+              <CardTitle className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Target className="h-4 w-4" />
                 Strategy Selection & Simulation
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="p-4 rounded-lg border border-warning/30 bg-warning/5">
-                <h4 className="font-semibold mb-2">Leader's Role</h4>
-                <p className="text-muted-foreground">{alert.details.decision.leaderRole}</p>
+            <CardContent className="space-y-3 pt-0">
+              <div className="p-3 rounded-lg border border-border/50 bg-muted/30">
+                <h4 className="text-xs font-medium text-muted-foreground mb-1">Leader's Role</h4>
+                <p className="text-xs text-muted-foreground">{alert.details.decision.leaderRole}</p>
               </div>
 
-              {/* Strategy Selection */}
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <h4 className="font-semibold">Select Strategies to Simulate</h4>
-                  <Badge variant="outline">{selectedStrategies.length} selected</Badge>
-                </div>
-
-                {alert.details.aiRecommendations.map((rec, i) => {
-                  const details = getStrategyDetails(rec);
-                  const isSelected = selectedStrategies.includes(rec);
-
-                  return (
-                    <div
-                      key={i}
-                      className={cn(
-                        "flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-all",
-                        isSelected
-                          ? "border-primary bg-primary/10"
-                          : "border-border/50 hover:border-primary/50"
-                      )}
-                      onClick={() => handleStrategyToggle(rec)}
-                    >
-                      <Checkbox
-                        checked={isSelected}
-                        className="mt-0.5"
-                      />
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <p className="text-sm font-medium">{details.title}</p>
-                          <Badge variant="outline" className="text-xs">
-                            {details.confidence}%
-                          </Badge>
-                        </div>
-                        <p className="text-xs text-muted-foreground mt-1">{rec.substring(0, 80)}...</p>
-                      </div>
-                    </div>
-                  );
-                })}
-
-                {/* Simulate Button */}
+              {/* Initiate War Room - moved after Leader's Role */}
+              <div className="flex items-center gap-2">
                 <Button
-                  onClick={handleSimulateStrategies}
-                  disabled={selectedStrategies.length === 0 || simulationRunning}
-                  className="w-full gap-2"
-                  size="lg"
-                >
-                  {simulationRunning ? (
-                    <>
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      Simulating...
-                    </>
-                  ) : (
-                    <>
-                      <Play className="h-4 w-4" />
-                      Simulate Selected Strategies
-                    </>
+                  size="sm"
+                  onClick={handleInitiateWarRoom}
+                  className={cn(
+                    "gap-2 transition-all",
+                    warRoomActive ? "bg-success/20 text-success hover:bg-success/30" : ""
                   )}
+                  disabled={isAssembling || warRoomActive}
+                >
+                  {warRoomActive ? <><CheckCircle className="h-3 w-3" /> War Room Live</> : (isAssembling ? <><Loader2 className="h-3 w-3 animate-spin" /> Assembling...</> : <><Users className="h-3 w-3" /> Initiate War Room</>)}
+                </Button>
+                <Button size="sm" variant="outline" onClick={() => handleTakeAction('Approve Failover')} className="gap-1">
+                  <CheckCircle className="h-3 w-3" />
+                  Approve Failover
+                </Button>
+                <Button size="sm" variant="outline" onClick={() => handleTakeAction('Override Prioritization')}>
+                  Override
                 </Button>
               </div>
-              <div>
-                <h4 className="font-semibold mb-2">SOC/NOC Functionality</h4>
-                <p className="text-muted-foreground">{alert.details.decision.socNocFunctionality}</p>
-              </div>
-              {/* Challenge Today - Commented out as requested */}
-              {/* <div className="p-4 rounded-lg border border-error/30 bg-error/5">
-                <h4 className="font-semibold mb-2 text-error">Challenge Today</h4>
-                <p className="text-muted-foreground">{alert.details.decision.challengeToday}</p>
-              </div> */}
 
-              {/* Simulation Progress */}
-              {simulationRunning && simulationSteps.length > 0 && (
-                <Card className="border-primary/30">
-                  <CardContent className="p-4">
-                    <h5 className="font-medium text-sm mb-3">Simulation Progress</h5>
-                    <div className="space-y-2">
-                      {simulationSteps.map((step) => (
-                        <div key={step.id} className="flex items-center gap-3">
-                          <div className="w-5 h-5 flex items-center justify-center">
-                            {step.status === 'completed' && <CheckCircle className="h-4 w-4 text-success" />}
-                            {step.status === 'running' && <Loader2 className="h-4 w-4 text-primary animate-spin" />}
-                            {step.status === 'pending' && <Clock className="h-4 w-4 text-muted-foreground" />}
-                          </div>
-                          <span className={cn(
-                            "text-sm flex-1",
-                            step.status === 'completed' && "text-success",
-                            step.status === 'running' && "text-primary font-medium",
-                            step.status === 'pending' && "text-muted-foreground"
-                          )}>
-                            {step.name}
-                          </span>
-                        </div>
-                      ))}
+              {warRoomActive && (
+                <Card className="border-success/30 bg-success/5">
+                  <CardContent className="p-2">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <CheckCircle className="h-3 w-3 text-success" />
+                        <span className="text-xs font-medium text-success">War Room Active</span>
+                      </div>
+                      <Badge variant="outline" className="text-xs bg-success/10 text-success">
+                        {decisionTime}s
+                      </Badge>
                     </div>
                   </CardContent>
                 </Card>
               )}
 
-              {/* Simulation Results */}
-              {showSimulationResults && simulationResults && (
+              {/* War Room Simulation Results - shown after war room ends */}
+              {warRoomSimulationResults && !warRoomActive && (
                 <Card className="border-success/30 bg-success/5">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-success">
-                      <CheckCircle className="h-5 w-5" />
-                      Simulation Results
+                  <CardHeader className="py-2">
+                    <CardTitle className="flex items-center justify-between text-xs text-success">
+                      <span className="flex items-center gap-1">
+                        <CheckCircle className="h-3 w-3" />
+                        War Room Simulation Results
+                      </span>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={handleResetSimulation}
+                        className="h-6 px-2 gap-1 text-muted-foreground hover:text-foreground"
+                      >
+                        <RotateCcw className="h-3 w-3" />
+                        Reset
+                      </Button>
                     </CardTitle>
                   </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                      <div className="text-center p-3 rounded-lg bg-background/50">
-                        <p className="text-2xl font-bold text-success">{simulationResults.successProbability.toFixed(1)}%</p>
-                        <p className="text-xs text-muted-foreground">Success Probability</p>
+                  <CardContent className="pt-0 space-y-2">
+                    <div className="grid grid-cols-4 gap-2">
+                      <div className="text-center p-2 rounded bg-background/50">
+                        <p className="text-sm font-semibold text-success">{warRoomSimulationResults.successProbability.toFixed(1)}%</p>
+                        <p className="text-[10px] text-muted-foreground">Success</p>
                       </div>
-                      <div className="text-center p-3 rounded-lg bg-background/50">
-                        <p className="text-2xl font-bold">{simulationResults.estimatedTime}</p>
-                        <p className="text-xs text-muted-foreground">Est. Resolution</p>
+                      <div className="text-center p-2 rounded bg-background/50">
+                        <p className="text-sm font-semibold">{warRoomSimulationResults.estimatedTime}</p>
+                        <p className="text-[10px] text-muted-foreground">Time</p>
                       </div>
-                      <div className="text-center p-3 rounded-lg bg-background/50">
-                        <p className="text-2xl font-bold text-primary">{simulationResults.recoveryRate}</p>
-                        <p className="text-xs text-muted-foreground">Recovery Rate</p>
+                      <div className="text-center p-2 rounded bg-background/50">
+                        <p className="text-sm font-semibold">{warRoomSimulationResults.recoveryRate}</p>
+                        <p className="text-[10px] text-muted-foreground">Recovery</p>
                       </div>
-                      <div className="text-center p-3 rounded-lg bg-background/50">
+                      <div className="text-center p-2 rounded bg-background/50">
                         <Badge className={cn(
-                          simulationResults.riskLevel === 'Low' && 'bg-success',
-                          simulationResults.riskLevel === 'Medium' && 'bg-warning',
-                          simulationResults.riskLevel === 'High' && 'bg-error'
+                          "text-[10px]",
+                          warRoomSimulationResults.riskLevel === 'Low' && 'bg-success',
+                          warRoomSimulationResults.riskLevel === 'Medium' && 'bg-muted text-foreground',
+                          warRoomSimulationResults.riskLevel === 'High' && 'bg-error'
                         )}>
-                          {simulationResults.riskLevel} Risk
+                          {warRoomSimulationResults.riskLevel}
                         </Badge>
-                        <p className="text-xs text-muted-foreground mt-1">Risk Level</p>
+                        <p className="text-[10px] text-muted-foreground mt-0.5">Risk</p>
                       </div>
                     </div>
-
-                    <div className="space-y-2">
-                      <h5 className="font-medium text-sm">Strategy Impact Preview</h5>
-                      {simulationResults.strategies.map((s: any, i: number) => (
-                        <div key={i} className="flex items-center justify-between p-2 rounded bg-background/50">
-                          <span className="text-sm">{s.name}</span>
-                          <div className="flex items-center gap-2">
-                            <Progress value={s.confidence} className="w-20 h-2" />
-                            <span className="text-xs text-muted-foreground">{s.confidence}%</span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-
                     <Button
                       onClick={handleExecuteStrategies}
                       className="w-full gap-2"
-                      size="lg"
+                      size="sm"
                     >
-                      <Zap className="h-4 w-4" />
+                      <Zap className="h-3 w-3" />
                       Execute Strategies
-                      <ArrowRight className="h-4 w-4" />
+                      <ArrowRight className="h-3 w-3" />
                     </Button>
                   </CardContent>
                 </Card>
               )}
 
-              {/* War Room Section */}
-              <div className="pt-4 border-t border-border/50">
-                <div className="flex flex-wrap gap-2">
-                  <Button onClick={() => handleTakeAction('Approve Failover')} className="gap-2">
-                    <CheckCircle className="h-4 w-4" />
-                    Approve Failover
-                  </Button>
-                  <Button variant="outline" onClick={() => handleTakeAction('Override Prioritization')}>
-                    Override Prioritization
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={handleInitiateWarRoom}
-                    className={cn(
-                      "gap-2 transition-all w-[180px]", // Fixed width for consistency
-                      warRoomActive ? "bg-success text-success-foreground cursor-not-allowed" : "border-primary/50 hover:bg-primary/10"
-                    )}
-                    // Disable if assembling or if the war room is fully active.
-                    disabled={isAssembling || warRoomActive}
-                  >
-                    {warRoomActive ? <><CheckCircle className="h-4 w-4" /> War Room Live</> : (isAssembling ? <><Loader2 className="h-4 w-4 animate-spin" /> Assembling...</> : <><Users className="h-4 w-4" /> Initiate War Room</>)}
-                  </Button>
-                </div>
-
-                {warRoomActive && (
-                  <Card className="mt-4 border-success/30 bg-success/5">
-                    <CardContent className="p-4">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <CheckCircle className="h-5 w-5 text-success" />
-                          <span className="font-semibold text-success">War Room Active</span>
-                        </div>
-                        <Badge variant="outline" className="bg-success/10 text-success">
-                          Decision Time: {decisionTime}s
-                        </Badge>
-                      </div>
-                      <p className="text-sm text-muted-foreground mt-2">
-                        All team leads joined and coordinated. Ready for execution.
-                      </p>
-                    </CardContent>
-                  </Card>
-                )}
+              <div>
+                <h4 className="text-xs font-medium text-muted-foreground mb-1">SOC/NOC Functionality</h4>
+                <p className="text-xs text-muted-foreground">{alert.details.decision.socNocFunctionality}</p>
               </div>
             </CardContent>
           </Card>
@@ -1294,62 +1215,44 @@ export function IRCAlertDetail({ alert, onBack }: IRCAlertDetailProps) {
         </DialogContent>
       </Dialog>
 
-      {/* War Room Dialog */}
+      {/* War Room Dialog - Bigger */}
       <Dialog open={warRoomOpen} onOpenChange={(open) => !open && handleReturnToDashboard()}>
-        <DialogContent className="max-w-5xl h-[90vh] flex flex-col">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Brain className="h-5 w-5 text-primary" />
+        <DialogContent className="max-w-[95vw] w-[1400px] h-[95vh] flex flex-col">
+          <DialogHeader className="pb-2">
+            <DialogTitle className="flex items-center gap-2 text-sm">
+              <Brain className="h-4 w-4 text-muted-foreground" />
               HELIOS War Room Coordination
             </DialogTitle>
-            <DialogDescription>
-              HELIOS is assembling the on-call roster to a unified bridge for rapid decision-making.
+            <DialogDescription className="text-xs">
+              Assembling on-call roster for rapid decision-making.
             </DialogDescription>
           </DialogHeader>
-          <div className="absolute top-4 right-12 flex items-center gap-0">
-            <Button variant="ghost" size="icon" onClick={handleMinimizeWarRoom} className="text-muted-foreground">
-              <Minus className="h-4 w-4" />
-              <span className="sr-only">Minimize</span>
+          <div className="absolute top-3 right-10 flex items-center gap-0">
+            <Button variant="ghost" size="icon" onClick={handleMinimizeWarRoom} className="text-muted-foreground h-6 w-6">
+              <Minus className="h-3 w-3" />
             </Button>
-            {/* The X button is rendered by DialogClose, but we can add our minimize next to it */}
           </div>
 
-
-
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 pt-4 flex-1 overflow-y-auto pr-2">
-            {/* Unified War Room Bridge */}
-            <div>
-              <h4 className="font-semibold mb-3 flex items-center gap-2">
-                <PhoneCall className="h-4 w-4" />
-                War Room Bridge Assembly
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 flex-1 overflow-hidden">
+            {/* Left: War Room Bridge Assembly */}
+            <div className="space-y-2 overflow-hidden">
+              <h4 className="text-xs font-medium flex items-center gap-1 text-muted-foreground">
+                <PhoneCall className="h-3 w-3" />
+                Bridge Assembly
               </h4>
-              <div className="space-y-2">
+              <div className="space-y-1 max-h-[calc(100%-80px)] overflow-y-auto pr-1">
                 {Object.entries(typeConfig).map(([typeKey, config]) => (
                   <div key={typeKey}>
-                    <h5 className="text-sm font-semibold text-muted-foreground my-2 flex items-center gap-2">{config.icon} {config.name}</h5>
+                    <h5 className="text-[10px] font-medium text-muted-foreground my-1 flex items-center gap-1">{config.icon} {config.name}</h5>
                     {participants.filter(p => p.type === typeKey).map((person) => {
                       const currentStatus = statusConfig[person.status];
                       return (
-                        <div
-                          key={person.id}
-                          className={cn(
-                            "flex items-center gap-3 p-2.5 rounded-lg border transition-all duration-300 mb-2",
-                            currentStatus.color,
-                            person.status === 'pending' && "opacity-60",
-                            (person.status === 'calling' || person.status === 'joining') && "ring-2 ring-primary/50"
-                          )}
-                        >
-                          <div className="flex-1">
-                            <div className="font-medium">{person.name}</div>
-                            <div className="text-sm text-muted-foreground">
-                              {person.role}
-                            </div>
+                        <div key={person.id} className={cn("flex items-center gap-2 p-1.5 rounded border text-xs mb-1", currentStatus.color, person.status === 'pending' && "opacity-60")}>
+                          <div className="flex-1 min-w-0">
+                            <div className="font-medium truncate text-[11px]">{person.name}</div>
+                            <div className="text-[10px] text-muted-foreground truncate">{person.role}</div>
                           </div>
-                          <Badge variant="outline" className={cn(
-                            "capitalize w-24 justify-center gap-1.5",
-                            currentStatus.color
-                          )}>
+                          <Badge variant="outline" className={cn("text-[9px] px-1 py-0", currentStatus.color)}>
                             {currentStatus.icon}
                             {currentStatus.text}
                           </Badge>
@@ -1359,118 +1262,105 @@ export function IRCAlertDetail({ alert, onBack }: IRCAlertDetailProps) {
                   </div>
                 ))}
               </div>
-
-              <div className="mt-4 p-4 rounded-lg border bg-muted/30">
-                <h5 className="text-sm font-semibold text-muted-foreground mb-3 flex items-center gap-2">
-                  <UserPlus className="h-4 w-4" />
-                  Add Additional Member
-                </h5>
-                <div className="space-y-2">
-                  <Input
-                    placeholder="Member Name (e.g., John Doe)"
-                    value={newMemberName}
-                    onChange={(e) => warRoomActions.setNewMemberName(e.target.value)}
-                  />
-                  <Input
-                    placeholder="Role / Team (e.g., Database Admin)"
-                    value={newMemberRole}
-                    onChange={(e) => warRoomActions.setNewMemberRole(e.target.value)}
-                  />
-                  <Button size="sm" className="w-full" onClick={warRoomActions.pageNewMember}>
-                    Add Member
-                  </Button>
-                </div>
-              </div>
+              {!warRoomActive && !isAssembling && (
+                <Button size="sm" className="w-full gap-1 text-xs" onClick={warRoomActions.startCallingSequence}>
+                  <PhoneCall className="h-3 w-3" />
+                  Assemble Bridge
+                </Button>
+              )}
             </div>
 
-            {/* Event Log & Status */}
-            <div>
-              <div className="mb-4">
-                <h4 className="font-semibold mb-2 flex items-center gap-2">
-                  <MessageSquareWarning className="h-4 w-4 text-warning" />
-                  Risks & Considerations
-                </h4>
-                <div className="p-3 rounded-lg border border-warning/30 bg-warning/10 text-sm text-warning-foreground space-y-1">
-                  <p>• **SLA Breach Risk:** {alert.slaRisk}</p>
-                  <p>• **Business Impact:** {alert.businessImpact}</p>
-                </div>
-              </div>
-              <div className="mb-4">
-                <h4 className="font-semibold mb-2 flex items-center gap-2">
-                  <Brain className="h-4 w-4 text-primary" />
-                  HELIOS Prioritized Actions
-                </h4>
-                <div className="p-3 rounded-lg border border-primary/30 bg-primary/10 text-sm text-primary-foreground space-y-1">
-                  {HELIOS_ACTIONS.slice(0, heliosTypingIndex).map((action, i) => (
-                    <p key={i} className="animate-in fade-in"> • {action}</p>
-                  ))}
-                </div>
-              </div>
-              {!warRoomActive && !isAssembling && (
-                <div className="my-4">
-                  <Button
-                    className="w-full gap-2"
-                    onClick={warRoomActions.startCallingSequence}
-                    disabled={isAssembling}
-                  >
-                    <PhoneCall className="h-4 w-4" />
-                    Assemble Bridge
-                  </Button>
-                  <p className="text-xs text-center text-muted-foreground mt-2">
-                    This will start calling all required participants to the bridge.
-                  </p>
-                </div>
-              )}
-              <h4 className="font-semibold mb-3 flex items-center gap-2">
-                <Activity className="h-4 w-4" />
-                Event Log
+            {/* Middle: Strategy Simulation - Only visible when war room active */}
+            <div className="space-y-2 overflow-hidden">
+              <h4 className="text-xs font-medium flex items-center gap-1 text-muted-foreground">
+                <Target className="h-3 w-3" />
+                Strategy Simulation
               </h4>
-              <div className="space-y-3 h-[200px] overflow-y-auto p-3 rounded-lg border bg-muted/30 pr-4">
-                {warRoomLog.map((log, index) => (
-                  <div key={index} className="flex items-start gap-3">
-                    <span className="font-mono text-xs text-muted-foreground pt-0.5">
-                      {log.time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
-                    </span>
-                    <p className="text-sm flex-1">{log.message}</p>
+              {warRoomActive ? (
+                <div className="space-y-2 max-h-[calc(100%-40px)] overflow-y-auto pr-1">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] text-muted-foreground">Select strategies:</span>
+                    <Badge variant="outline" className="text-[9px]">{selectedStrategies.length} selected</Badge>
                   </div>
-                ))}
-                {isAssembling && !warRoomActive && (
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    <span>Processing...</span>
-                  </div>
-                )}
-              </div>
-              <div className="mt-3">
-                {/* Decision Time Metric */}
-                {warRoomActive ? (
-                  <Card className="border-success/30 bg-success/5">
-                    <CardContent className="p-4">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <div className="text-2xl font-bold text-success">{decisionTime}s</div>
-                          <div className="text-sm text-muted-foreground">Total Assembly Time</div>
-                        </div>
-                        <div className="text-right">
-                          <div className="text-lg font-semibold text-success">75% Faster</div>
-                          <div className="text-sm text-muted-foreground">vs. Manual Assembly</div>
+                  {alert.details.aiRecommendations.slice(0, 4).map((rec, i) => {
+                    const details = getStrategyDetails(rec);
+                    const isSelected = selectedStrategies.includes(rec);
+                    return (
+                      <div key={i} className={cn("flex items-start gap-2 p-2 rounded border cursor-pointer text-xs", isSelected ? "border-success/50 bg-success/10" : "border-border/50 hover:border-border")} onClick={() => handleStrategyToggle(rec)}>
+                        <Checkbox checked={isSelected} className="mt-0.5 h-3 w-3" />
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-1">
+                            <span className="font-medium text-[11px] truncate">{details.title}</span>
+                            <Badge variant="outline" className="text-[9px]">{details.confidence}%</Badge>
+                          </div>
                         </div>
                       </div>
-                    </CardContent>
-                  </Card>
-                ) : (
-                  <div className="flex items-center justify-center p-4 rounded-lg bg-muted/50 border">
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    <p className="text-sm text-muted-foreground">
-                      Coordinating bridge...
-                    </p>
+                    );
+                  })}
+                  <Button size="sm" onClick={handleSimulateStrategies} disabled={selectedStrategies.length === 0 || simulationRunning} className="w-full gap-1 text-xs">
+                    {simulationRunning ? <><Loader2 className="h-3 w-3 animate-spin" />Simulating...</> : <><Play className="h-3 w-3" />Simulate</>}
+                  </Button>
+                  {showSimulationResults && simulationResults && (
+                    <Card className="border-success/30 bg-success/5">
+                      <CardContent className="p-2 space-y-2">
+                        <div className="grid grid-cols-2 gap-1">
+                          <div className="text-center p-1 rounded bg-background/50">
+                            <p className="text-sm font-semibold text-success">{simulationResults.successProbability.toFixed(0)}%</p>
+                            <p className="text-[9px] text-muted-foreground">Success</p>
+                          </div>
+                          <div className="text-center p-1 rounded bg-background/50">
+                            <p className="text-sm font-semibold">{simulationResults.recoveryRate}</p>
+                            <p className="text-[9px] text-muted-foreground">Recovery</p>
+                          </div>
+                        </div>
+                        <Button size="sm" variant="outline" onClick={handleResetSimulation} className="w-full gap-1 text-xs">
+                          <RotateCcw className="h-3 w-3" />Reset
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  )}
+                </div>
+              ) : (
+                <div className="flex items-center justify-center h-32 text-xs text-muted-foreground">
+                  <p>Assemble bridge to access strategy simulation</p>
+                </div>
+              )}
+            </div>
+
+            {/* Right: Event Log */}
+            <div className="space-y-2 overflow-hidden">
+              <h4 className="text-xs font-medium flex items-center gap-1 text-muted-foreground">
+                <Activity className="h-3 w-3" />
+                Event Log
+              </h4>
+              <div className="space-y-1 h-[200px] overflow-y-auto p-2 rounded border bg-muted/30 text-xs">
+                {warRoomLog.map((log, index) => (
+                  <div key={index} className="flex items-start gap-2">
+                    <span className="font-mono text-[9px] text-muted-foreground">{log.time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span>
+                    <p className="text-[10px] flex-1">{log.message}</p>
                   </div>
-                )}
+                ))}
               </div>
+              {warRoomActive && (
+                <Card className="border-success/30 bg-success/5">
+                  <CardContent className="p-2">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <div className="text-lg font-semibold text-success">{decisionTime}s</div>
+                        <div className="text-[10px] text-muted-foreground">Assembly Time</div>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-sm font-medium text-success">75% Faster</div>
+                        <div className="text-[10px] text-muted-foreground">vs. Manual</div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
             </div>
           </div>
-          <DialogFooter className="mt-4">
-            <Button variant="destructive" onClick={handleEndWarRoom}>
+          <DialogFooter className="pt-2">
+            <Button variant="destructive" size="sm" onClick={handleEndWarRoom}>
               End War Room
             </Button>
           </DialogFooter>
