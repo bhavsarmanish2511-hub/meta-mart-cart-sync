@@ -1162,42 +1162,42 @@ export function IRCAlertDetail({ alert, onBack }: IRCAlertDetailProps) {
 
       {/* War Room Dialog - Bigger */}
       <Dialog open={warRoomOpen} onOpenChange={(open) => !open && handleReturnToDashboard()}>
-        <DialogContent className="max-w-[95vw] w-[1400px] h-[95vh] flex flex-col">
-          <DialogHeader className="pb-2">
-            <DialogTitle className="flex items-center gap-2 text-sm">
-              <Brain className="h-4 w-4 text-muted-foreground" />
+        <DialogContent className="max-w-[95vw] w-[1400px] h-[90vh] flex flex-col">
+          <DialogHeader className="pb-4 border-b border-border/30">
+            <DialogTitle className="flex items-center gap-3 text-xl">
+              <Brain className="h-6 w-6 text-primary" />
               HELIOS War Room Coordination
             </DialogTitle>
-            <DialogDescription className="text-xs">
-              Assembling on-call roster for rapid decision-making.
+            <DialogDescription className="text-sm">
+              Assembling on-call roster for rapid decision-making and strategy simulation.
             </DialogDescription>
           </DialogHeader>
-          <div className="absolute top-3 right-10 flex items-center gap-0">
-            <Button variant="ghost" size="icon" onClick={handleMinimizeWarRoom} className="text-muted-foreground h-6 w-6">
-              <Minus className="h-3 w-3" />
+          <div className="absolute top-4 right-12 flex items-center gap-0">
+            <Button variant="ghost" size="icon" onClick={handleMinimizeWarRoom} className="text-muted-foreground h-8 w-8">
+              <Minus className="h-4 w-4" />
             </Button>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 flex-1 overflow-hidden">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 flex-1 overflow-hidden pt-4">
             {/* Left: War Room Bridge Assembly */}
-            <div className="space-y-2 overflow-hidden">
-              <h4 className="text-xs font-medium flex items-center gap-1 text-muted-foreground">
-                <PhoneCall className="h-3 w-3" />
+            <div className="space-y-3 overflow-hidden">
+              <h4 className="text-sm font-semibold flex items-center gap-2 text-foreground">
+                <PhoneCall className="h-4 w-4 text-primary" />
                 Bridge Assembly
               </h4>
-              <div className="space-y-1 max-h-[calc(100%-80px)] overflow-y-auto pr-1">
+              <div className="space-y-2 max-h-[calc(100%-100px)] overflow-y-auto pr-1">
                 {Object.entries(typeConfig).map(([typeKey, config]) => (
-                  <div key={typeKey}>
-                    <h5 className="text-[10px] font-medium text-muted-foreground my-1 flex items-center gap-1">{config.icon} {config.name}</h5>
+                  <div key={typeKey} className="mb-3">
+                    <h5 className="text-xs font-medium text-muted-foreground mb-2 flex items-center gap-2">{config.icon} {config.name}</h5>
                     {participants.filter(p => p.type === typeKey).map((person) => {
                       const currentStatus = statusConfig[person.status];
                       return (
-                        <div key={person.id} className={cn("flex items-center gap-2 p-1.5 rounded border text-xs mb-1", currentStatus.color, person.status === 'pending' && "opacity-60")}>
+                        <div key={person.id} className={cn("flex items-center gap-3 p-2.5 rounded-lg border mb-2", currentStatus.color, person.status === 'pending' && "opacity-60")}>
                           <div className="flex-1 min-w-0">
-                            <div className="font-medium truncate text-[11px]">{person.name}</div>
-                            <div className="text-[10px] text-muted-foreground truncate">{person.role}</div>
+                            <div className="font-medium truncate text-sm">{person.name}</div>
+                            <div className="text-xs text-muted-foreground truncate">{person.role}</div>
                           </div>
-                          <Badge variant="outline" className={cn("text-[9px] px-1 py-0", currentStatus.color)}>
+                          <Badge variant="outline" className={cn("text-xs px-2 py-0.5 gap-1", currentStatus.color)}>
                             {currentStatus.icon}
                             {currentStatus.text}
                           </Badge>
@@ -1208,95 +1208,136 @@ export function IRCAlertDetail({ alert, onBack }: IRCAlertDetailProps) {
                 ))}
               </div>
               {!warRoomActive && !isAssembling && (
-                <Button size="sm" className="w-full gap-1 text-xs" onClick={warRoomActions.startCallingSequence}>
-                  <PhoneCall className="h-3 w-3" />
+                <Button size="default" className="w-full gap-2 text-sm h-10" onClick={warRoomActions.startCallingSequence}>
+                  <PhoneCall className="h-4 w-4" />
                   Assemble Bridge
                 </Button>
               )}
             </div>
 
             {/* Middle: Strategy Simulation - Only visible when war room active */}
-            <div className="space-y-2 overflow-hidden">
-              <h4 className="text-xs font-medium flex items-center gap-1 text-muted-foreground">
-                <Target className="h-3 w-3" />
+            <div className="space-y-3 overflow-hidden lg:col-span-1">
+              <h4 className="text-sm font-semibold flex items-center gap-2 text-foreground">
+                <Target className="h-4 w-4 text-primary" />
                 Strategy Simulation
               </h4>
               {warRoomActive ? (
-                <div className="space-y-2 max-h-[calc(100%-40px)] overflow-y-auto pr-1">
+                <div className="space-y-3 max-h-[calc(100%-60px)] overflow-y-auto pr-1">
                   <div className="flex items-center justify-between">
-                    <span className="text-[10px] text-muted-foreground">Select strategies:</span>
-                    <Badge variant="outline" className="text-[9px]">{selectedStrategies.length} selected</Badge>
+                    <span className="text-xs text-muted-foreground">Select strategies to simulate:</span>
+                    <Badge variant="outline" className="text-xs">{selectedStrategies.length} selected</Badge>
                   </div>
                   {alert.details.aiRecommendations.slice(0, 4).map((rec, i) => {
                     const details = getStrategyDetails(rec);
                     const isSelected = selectedStrategies.includes(rec);
+                    // Generate mock strategy metrics
+                    const recoveryRate = [96.7, 94.2, 91.8, 89.5][i] || 90;
+                    const probability = details.confidence;
+                    const estimatedTime = ['8 min', '12 min', '15 min', '18 min'][i] || '10 min';
+                    const riskLevel = probability > 93 ? 'Low' : probability > 88 ? 'Medium' : 'High';
                     return (
-                      <div key={i} className={cn("flex items-start gap-2 p-2 rounded border cursor-pointer text-xs", isSelected ? "border-success/50 bg-success/10" : "border-border/50 hover:border-border")} onClick={() => handleStrategyToggle(rec)}>
-                        <Checkbox checked={isSelected} className="mt-0.5 h-3 w-3" />
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-1">
-                            <span className="font-medium text-[11px] truncate">{details.title}</span>
-                            <Badge variant="outline" className="text-[9px]">{details.confidence}%</Badge>
+                      <div key={i} className={cn(
+                        "p-3 rounded-lg border cursor-pointer transition-all",
+                        isSelected ? "border-success/50 bg-success/10" : "border-border/50 hover:border-primary/30 hover:bg-muted/20"
+                      )} onClick={() => handleStrategyToggle(rec)}>
+                        <div className="flex items-start gap-3">
+                          <Checkbox checked={isSelected} className="mt-1 h-4 w-4" />
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-2">
+                              <span className="font-semibold text-sm">{details.title}</span>
+                            </div>
+                            <div className="grid grid-cols-4 gap-2 mt-2">
+                              <div className="text-center p-1.5 rounded bg-muted/30">
+                                <p className="text-sm font-bold text-primary">{probability}%</p>
+                                <p className="text-[10px] text-muted-foreground">Probability</p>
+                              </div>
+                              <div className="text-center p-1.5 rounded bg-muted/30">
+                                <p className="text-sm font-bold text-success">{recoveryRate}%</p>
+                                <p className="text-[10px] text-muted-foreground">Recovery</p>
+                              </div>
+                              <div className="text-center p-1.5 rounded bg-muted/30">
+                                <p className="text-sm font-bold">{estimatedTime}</p>
+                                <p className="text-[10px] text-muted-foreground">Est. Time</p>
+                              </div>
+                              <div className="text-center p-1.5 rounded bg-muted/30">
+                                <p className={cn("text-sm font-bold", riskLevel === 'Low' ? 'text-success' : riskLevel === 'Medium' ? 'text-muted-foreground' : 'text-error')}>{riskLevel}</p>
+                                <p className="text-[10px] text-muted-foreground">Risk</p>
+                              </div>
+                            </div>
+                            <p className="text-xs text-muted-foreground mt-2 line-clamp-2">{details.howItWorks}</p>
                           </div>
                         </div>
                       </div>
                     );
                   })}
-                  <Button size="sm" onClick={handleSimulateStrategies} disabled={selectedStrategies.length === 0 || simulationRunning} className="w-full gap-1 text-xs">
-                    {simulationRunning ? <><Loader2 className="h-3 w-3 animate-spin" />Simulating...</> : <><Play className="h-3 w-3" />Simulate</>}
+                  <Button size="default" onClick={handleSimulateStrategies} disabled={selectedStrategies.length === 0 || simulationRunning} className="w-full gap-2 text-sm h-10">
+                    {simulationRunning ? <><Loader2 className="h-4 w-4 animate-spin" />Simulating...</> : <><Play className="h-4 w-4" />Simulate Selected Strategies</>}
                   </Button>
                   {showSimulationResults && simulationResults && (
                     <Card className="border-success/30 bg-success/5">
-                      <CardContent className="p-2 space-y-2">
-                        <div className="grid grid-cols-2 gap-1">
-                          <div className="text-center p-1 rounded bg-background/50">
-                            <p className="text-sm font-semibold text-success">{simulationResults.successProbability.toFixed(0)}%</p>
-                            <p className="text-[9px] text-muted-foreground">Success</p>
+                      <CardContent className="p-3 space-y-3">
+                        <h5 className="text-sm font-semibold text-success">Simulation Results</h5>
+                        <div className="grid grid-cols-4 gap-2">
+                          <div className="text-center p-2 rounded bg-background/50">
+                            <p className="text-lg font-bold text-success">{simulationResults.successProbability.toFixed(0)}%</p>
+                            <p className="text-xs text-muted-foreground">Success Rate</p>
                           </div>
-                          <div className="text-center p-1 rounded bg-background/50">
-                            <p className="text-sm font-semibold">{simulationResults.recoveryRate}</p>
-                            <p className="text-[9px] text-muted-foreground">Recovery</p>
+                          <div className="text-center p-2 rounded bg-background/50">
+                            <p className="text-lg font-bold text-primary">{simulationResults.recoveryRate}</p>
+                            <p className="text-xs text-muted-foreground">Recovery Rate</p>
+                          </div>
+                          <div className="text-center p-2 rounded bg-background/50">
+                            <p className="text-lg font-bold">{simulationResults.estimatedTime}</p>
+                            <p className="text-xs text-muted-foreground">Est. Time</p>
+                          </div>
+                          <div className="text-center p-2 rounded bg-background/50">
+                            <Badge variant="outline" className={cn("text-xs", simulationResults.riskLevel === 'low' ? 'border-success/50 text-success' : simulationResults.riskLevel === 'medium' ? 'border-border text-muted-foreground' : 'border-error/50 text-error')}>
+                              {simulationResults.riskLevel.toUpperCase()}
+                            </Badge>
+                            <p className="text-xs text-muted-foreground mt-1">Risk Level</p>
                           </div>
                         </div>
-                        <Button size="sm" variant="outline" onClick={handleResetSimulation} className="w-full gap-1 text-xs">
-                          <RotateCcw className="h-3 w-3" />Reset
+                        <Button size="sm" variant="outline" onClick={handleResetSimulation} className="w-full gap-2 text-xs">
+                          <RotateCcw className="h-3.5 w-3.5" />Reset Simulation
                         </Button>
                       </CardContent>
                     </Card>
                   )}
                 </div>
               ) : (
-                <div className="flex items-center justify-center h-32 text-xs text-muted-foreground">
-                  <p>Assemble bridge to access strategy simulation</p>
+                <div className="flex flex-col items-center justify-center h-48 text-muted-foreground rounded-lg border border-dashed border-border/50 bg-muted/10">
+                  <Target className="h-10 w-10 mb-3 opacity-30" />
+                  <p className="text-sm">Assemble bridge to access</p>
+                  <p className="text-xs">strategy simulation</p>
                 </div>
               )}
             </div>
 
             {/* Right: Event Log */}
-            <div className="space-y-2 overflow-hidden">
-              <h4 className="text-xs font-medium flex items-center gap-1 text-muted-foreground">
-                <Activity className="h-3 w-3" />
+            <div className="space-y-3 overflow-hidden">
+              <h4 className="text-sm font-semibold flex items-center gap-2 text-foreground">
+                <Activity className="h-4 w-4 text-primary" />
                 Event Log
               </h4>
-              <div className="space-y-1 h-[200px] overflow-y-auto p-2 rounded border bg-muted/30 text-xs">
+              <div className="space-y-1.5 h-[280px] overflow-y-auto p-3 rounded-lg border bg-muted/20 text-sm">
                 {warRoomLog.map((log, index) => (
-                  <div key={index} className="flex items-start gap-2">
-                    <span className="font-mono text-[9px] text-muted-foreground">{log.time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span>
-                    <p className="text-[10px] flex-1">{log.message}</p>
+                  <div key={index} className="flex items-start gap-3">
+                    <span className="font-mono text-xs text-muted-foreground whitespace-nowrap">{log.time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span>
+                    <p className="text-xs flex-1">{log.message}</p>
                   </div>
                 ))}
               </div>
               {warRoomActive && (
                 <Card className="border-success/30 bg-success/5">
-                  <CardContent className="p-2">
+                  <CardContent className="p-3">
                     <div className="flex items-center justify-between">
                       <div>
-                        <div className="text-lg font-semibold text-success">{decisionTime}s</div>
-                        <div className="text-[10px] text-muted-foreground">Assembly Time</div>
+                        <div className="text-2xl font-bold text-success">{decisionTime}s</div>
+                        <div className="text-xs text-muted-foreground">Assembly Time</div>
                       </div>
                       <div className="text-right">
-                        <div className="text-sm font-medium text-success">75% Faster</div>
-                        <div className="text-[10px] text-muted-foreground">vs. Manual</div>
+                        <div className="text-lg font-semibold text-success">75% Faster</div>
+                        <div className="text-xs text-muted-foreground">vs. Manual Process</div>
                       </div>
                     </div>
                   </CardContent>
@@ -1304,11 +1345,13 @@ export function IRCAlertDetail({ alert, onBack }: IRCAlertDetailProps) {
               )}
             </div>
           </div>
-          <DialogFooter className="pt-2">
-            <Button variant="destructive" size="sm" onClick={handleEndWarRoom}>
+          
+          {/* End War Room Button - Centered at bottom */}
+          <div className="pt-4 flex justify-center border-t border-border/30">
+            <Button variant="destructive" size="lg" onClick={handleEndWarRoom} className="px-8">
               End War Room
             </Button>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
