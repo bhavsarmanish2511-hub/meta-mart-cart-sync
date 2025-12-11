@@ -1345,7 +1345,7 @@ export function IRCAlertDetail({ alert, onBack }: IRCAlertDetailProps) {
               )}
             </div>
           </div>
-          
+
           {/* End War Room Button - Centered at bottom */}
           <div className="pt-4 flex justify-center border-t border-border/30">
             <Button variant="destructive" size="lg" onClick={handleEndWarRoom} className="px-8">
