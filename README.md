@@ -2,7 +2,7 @@
 
 ## Project info
 
-**URL**: https://lovable.dev/projects/5de37d05-1c1d-491d-8fae-0c253658fc5e
+**URL**: https://lovable.dev/projects/9a1289ba-3d1c-432f-a84c-fc36fa7b8796
 
 ## How can I edit this code?
 
@@ -10,7 +10,7 @@ There are several ways of editing your application.
 
 **Use Lovable**
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/5de37d05-1c1d-491d-8fae-0c253658fc5e) and start prompting.
+Simply visit the [Lovable Project](https://lovable.dev/projects/9a1289ba-3d1c-432f-a84c-fc36fa7b8796) and start prompting.
 
 Changes made via Lovable will be committed automatically to this repo.
 
@@ -62,7 +62,7 @@ This project is built with:
 
 ## How can I deploy this project?
 
-Simply open [Lovable](https://lovable.dev/projects/5de37d05-1c1d-491d-8fae-0c253658fc5e) and click on Share -> Publish.
+Simply open [Lovable](https://lovable.dev/projects/9a1289ba-3d1c-432f-a84c-fc36fa7b8796) and click on Share -> Publish.
 
 ## Can I connect a custom domain to my Lovable project?
 
@@ -70,4 +70,15 @@ Yes, you can!
 
 To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+
+
+"SecureNet Command Center," a sophisticated dashboard for security and network operations.
+
+Architecture:
+
+Frontend: It's a React single-page application built with Vite and TypeScript.
+Backend: It's set up to use Supabase for database and authentication.
+UI: The interface is built with TailwindCSS and shadcn/ui components, featuring rich data visualizations.
+Current Status: The application is a high-fidelity prototype. The UI is well-developed, but the authentication and data are currently mocked. The Supabase integration is configured but not yet fully implemented.
+
+In short, it's a comprehensive security dashboard prototype, ready for backend integration. Let me know if you'd like to dive into any specific part of the codebase.
