@@ -7,17 +7,17 @@ import { cn } from '@/lib/utils';
 import { IRCAlertDetail } from './IRCAlertDetail';
 
 const severityStyles = {
-  critical: 'bg-error/20 text-error border-error/30 animate-pulse',
-  high: 'bg-muted/30 text-foreground border-border/50',
-  medium: 'bg-muted/20 text-foreground border-border/30',
-  low: 'bg-muted text-muted-foreground border-border',
+  critical: 'bg-error/10 border-error/30',
+  high: 'bg-muted/20 border-border/40',
+  medium: 'bg-muted/10 border-border/30',
+  low: 'bg-muted/5 border-border/20',
 };
 
 const statusStyles = {
-  active: 'bg-error text-error-foreground',
-  investigating: 'bg-muted text-foreground',
-  mitigating: 'bg-muted text-foreground',
-  resolved: 'bg-muted text-foreground',
+  active: 'bg-error/80 text-error-foreground',
+  investigating: 'bg-muted/60 text-foreground',
+  mitigating: 'bg-muted/60 text-foreground',
+  resolved: 'bg-muted/40 text-muted-foreground',
 };
 
 export function IRCLeaderDashboard() {
@@ -35,11 +35,11 @@ export function IRCLeaderDashboard() {
       {/* Header */}
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold mb-1 flex items-center gap-2">
-            <Shield className="h-6 w-6 text-muted-foreground" />
+          <h1 className="text-xl font-medium text-foreground/90 mb-1 flex items-center gap-2">
+            <Shield className="h-5 w-5 text-muted-foreground" />
             IRC Leader Command Console
           </h1>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-xs text-muted-foreground">
             Incident Response Command Center - Real-time Alert Management
           </p>
         </div>
@@ -48,11 +48,11 @@ export function IRCLeaderDashboard() {
             <AlertTriangle className="h-3 w-3 mr-1" />
             {criticalCount} Critical
           </Badge>
-          <Badge variant="outline" className="bg-muted text-muted-foreground border-border text-xs px-2 py-0.5">
+          <Badge variant="outline" className="bg-muted/50 text-muted-foreground border-border/50 text-xs px-2 py-0.5">
             <Activity className="h-3 w-3 mr-1" />
             {activeCount} Active
           </Badge>
-          <Badge variant="outline" className="bg-muted text-muted-foreground border-border text-xs px-2 py-0.5">
+          <Badge variant="outline" className="bg-muted/50 text-muted-foreground border-border/50 text-xs px-2 py-0.5">
             <Zap className="h-3 w-3 mr-1" />
             HELIOS Active
           </Badge>
@@ -61,86 +61,86 @@ export function IRCLeaderDashboard() {
 
       {/* Stats Overview */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <Card className="border-error/30 bg-error/5">
+        <Card className="border-error/20 bg-error/5">
           <CardContent className="p-3 flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-error/20">
-              <AlertTriangle className="h-5 w-5 text-error" />
+            <div className="p-2 rounded-lg bg-error/10">
+              <AlertTriangle className="h-4 w-4 text-error" />
             </div>
             <div>
-              <p className="text-xs text-muted-foreground">Critical Incidents</p>
-              <p className="text-xl font-semibold text-error">{criticalCount}</p>
+              <p className="text-[10px] text-muted-foreground">Critical Incidents</p>
+              <p className="text-lg font-semibold text-error">{criticalCount}</p>
             </div>
           </CardContent>
         </Card>
-        <Card className="border-border/50 bg-muted/30">
+        <Card className="border-border/30 bg-muted/10">
           <CardContent className="p-3 flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-muted">
-              <Clock className="h-5 w-5 text-muted-foreground" />
+            <div className="p-2 rounded-lg bg-muted/50">
+              <Clock className="h-4 w-4 text-muted-foreground" />
             </div>
             <div>
-              <p className="text-xs text-muted-foreground">MTTR Target</p>
-              <p className="text-xl font-semibold">15 min</p>
+              <p className="text-[10px] text-muted-foreground">MTTR Target</p>
+              <p className="text-lg font-semibold text-foreground/80">15 min</p>
             </div>
           </CardContent>
         </Card>
-        <Card className="border-border/50 bg-muted/30">
+        <Card className="border-border/30 bg-muted/10">
           <CardContent className="p-3 flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-muted">
-              <Server className="h-5 w-5 text-muted-foreground" />
+            <div className="p-2 rounded-lg bg-muted/50">
+              <Server className="h-4 w-4 text-muted-foreground" />
             </div>
             <div>
-              <p className="text-xs text-muted-foreground">Systems Affected</p>
-              <p className="text-xl font-semibold">12</p>
+              <p className="text-[10px] text-muted-foreground">Systems Affected</p>
+              <p className="text-lg font-semibold text-foreground/80">12</p>
             </div>
           </CardContent>
         </Card>
-        <Card className="border-border/50 bg-muted/30">
+        <Card className="border-border/30 bg-muted/10">
           <CardContent className="p-3 flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-muted">
-              <DollarSign className="h-5 w-5 text-muted-foreground" />
+            <div className="p-2 rounded-lg bg-muted/50">
+              <DollarSign className="h-4 w-4 text-muted-foreground" />
             </div>
             <div>
-              <p className="text-xs text-muted-foreground">Revenue at Risk</p>
-              <p className="text-xl font-semibold">$2.3M/hr</p>
+              <p className="text-[10px] text-muted-foreground">Revenue at Risk</p>
+              <p className="text-lg font-semibold text-foreground/80">$2.3M/hr</p>
             </div>
           </CardContent>
         </Card>
       </div>
 
       {/* Alert List */}
-      <Card>
-        <CardHeader className="py-3">
-          <CardTitle className="flex items-center gap-2 text-base">
+      <Card className="border-border/30">
+        <CardHeader className="py-2">
+          <CardTitle className="flex items-center gap-2 text-sm font-medium text-foreground/80">
             <AlertTriangle className="h-4 w-4 text-error" />
             Active Incidents - Click to Manage
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-3 pt-0">
+        <CardContent className="space-y-2 pt-0">
           {ircAlerts.map((alert) => (
             <div
               key={alert.id}
               onClick={() => setSelectedAlert(alert)}
               className={cn(
-                "p-3 rounded-lg border cursor-pointer transition-all hover:scale-[1.01] hover:shadow-lg",
+                "p-3 rounded-lg border cursor-pointer transition-all hover:scale-[1.005] hover:shadow-md",
                 severityStyles[alert.severity]
               )}
             >
-              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
-                <div className="space-y-1.5 flex-1">
+              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-2">
+                <div className="space-y-1 flex-1">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <Badge className={cn(statusStyles[alert.status], "text-xs")}>
+                    <Badge className={cn(statusStyles[alert.status], "text-[10px] px-1.5 py-0")}>
                       {alert.status.toUpperCase()}
                     </Badge>
                     <Badge variant="outline" className={cn(
-                      "uppercase text-xs",
+                      "uppercase text-[10px] px-1.5 py-0",
                       alert.severity === 'critical' && "text-error border-error/30"
                     )}>
                       {alert.severity}
                     </Badge>
-                    <span className="text-xs font-mono text-muted-foreground">{alert.id}</span>
+                    <span className="text-[10px] font-mono text-muted-foreground">{alert.id}</span>
                   </div>
-                  <h3 className="font-medium text-sm">{alert.title}</h3>
-                  <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
+                  <h3 className="font-medium text-sm text-foreground/90">{alert.title}</h3>
+                  <div className="flex flex-wrap gap-3 text-[10px] text-muted-foreground">
                     <span className="flex items-center gap-1">
                       <Clock className="h-3 w-3" />
                       {new Date(alert.timestamp).toLocaleString()}
@@ -156,8 +156,8 @@ export function IRCLeaderDashboard() {
                   </div>
                 </div>
                 <div className="text-right space-y-0.5">
-                  <p className="text-xs font-medium">{alert.businessImpact}</p>
-                  <p className="text-xs text-error">{alert.slaRisk}</p>
+                  <p className="text-[10px] font-medium text-foreground/70">{alert.businessImpact}</p>
+                  <p className="text-[10px] text-error">{alert.slaRisk}</p>
                 </div>
               </div>
             </div>
