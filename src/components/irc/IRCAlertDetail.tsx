@@ -4,7 +4,7 @@ import {
   ArrowLeft, AlertTriangle, Brain, Play, Zap, GitBranch, FileText, MessageSquareWarning,
   CheckCircle, Clock, XCircle, Loader2, Shield, Target, Activity, Minus, X,
   Server, MapPin, DollarSign, ChevronRight, Pause, Users, UserCheck, Building2, Headphones, PhoneCall, PhoneForwarded, UserPlus, CircleDotDashed,
-  TrendingUp, Eye, ArrowRight, BarChart3, RotateCcw
+  TrendingUp, Eye, ArrowRight, BarChart3, RotateCcw, ScrollText, Download, Copy, AlertOctagon, ShieldAlert, Settings2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -17,10 +17,15 @@ import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { useWarRoom, ParticipantStatus, ParticipantType, WarRoomParticipant } from '@/hooks/useWarRoom';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
 interface IRCAlertDetailProps {
   alert: IRCAlert;
   onBack: () => void;
+  onStatusUpdate?: (alertId: string, newStatus: string) => void;
 }
 
 interface ExecutionAgent {
@@ -28,6 +33,17 @@ interface ExecutionAgent {
   status: 'idle' | 'active' | 'completed';
   currentTask: string;
   progress: number;
+}
+
+// Activity Log Types
+interface ActivityLogEntry {
+  id: string;
+  timestamp: Date;
+  category: 'overview' | 'ai' | 'decision' | 'execution' | 'impact' | 'system' | 'override';
+  action: string;
+  details?: string;
+  actor: 'user' | 'helios' | 'system';
+  severity: 'info' | 'warning' | 'success' | 'error';
 }
 
 const phaseLabels = {
@@ -49,6 +65,26 @@ const riskColors = {
   low: 'text-muted-foreground border-border/30 bg-muted/10',
   medium: 'text-muted-foreground border-border/50 bg-muted/20',
   high: 'text-error border-error/30 bg-error/10',
+};
+
+const categoryIcons = {
+  overview: <FileText className="h-3 w-3" />,
+  ai: <Brain className="h-3 w-3" />,
+  decision: <Target className="h-3 w-3" />,
+  execution: <Zap className="h-3 w-3" />,
+  impact: <TrendingUp className="h-3 w-3" />,
+  system: <Settings2 className="h-3 w-3" />,
+  override: <AlertOctagon className="h-3 w-3" />,
+};
+
+const categoryColors = {
+  overview: 'bg-blue-500/20 text-blue-400',
+  ai: 'bg-purple-500/20 text-purple-400',
+  decision: 'bg-amber-500/20 text-amber-400',
+  execution: 'bg-emerald-500/20 text-emerald-400',
+  impact: 'bg-cyan-500/20 text-cyan-400',
+  system: 'bg-slate-500/20 text-slate-400',
+  override: 'bg-red-500/20 text-red-400',
 };
 
 // AI Strategy details with deep dive info
@@ -347,7 +383,7 @@ const statusConfig: Record<ParticipantStatus, { text: string; icon: JSX.Element;
   joined: { text: 'Joined', icon: <CheckCircle className="h-2.5 w-2.5" />, color: 'bg-success/10 text-success border-success/30' },
 };
 
-export function IRCAlertDetail({ alert, onBack }: IRCAlertDetailProps) {
+export function IRCAlertDetail({ alert, onBack, onStatusUpdate }: IRCAlertDetailProps) {
   const [activeTab, setActiveTab] = useState('overview');
   const [simulationRunning, setSimulationRunning] = useState(false);
   const [simulationSteps, setSimulationSteps] = useState<SimulationStep[]>([]);
@@ -384,6 +420,21 @@ export function IRCAlertDetail({ alert, onBack }: IRCAlertDetailProps) {
     appliedAt: Date;
   } | null>(null);
 
+  // Activity Log state
+  const [activityLog, setActivityLog] = useState<ActivityLogEntry[]>([]);
+  
+  // Resolution states
+  const [resolutionComplete, setResolutionComplete] = useState(false);
+  const [alertStatus, setAlertStatus] = useState(alert.status);
+  
+  // Report Dialog
+  const [reportDialogOpen, setReportDialogOpen] = useState(false);
+  
+  // Override Dialog
+  const [overrideDialogOpen, setOverrideDialogOpen] = useState(false);
+  const [overrideType, setOverrideType] = useState<string>('priority');
+  const [overrideJustification, setOverrideJustification] = useState('');
+
   const {
     isOpen: warRoomOpen,
     isMinimized: warRoomMinimized,
@@ -401,8 +452,42 @@ export function IRCAlertDetail({ alert, onBack }: IRCAlertDetailProps) {
     initiate: initiateWarRoom,
     ...warRoomActions
   } = useWarRoom();
+
+  // Add activity log entry helper
+  const addActivityLog = useCallback((
+    category: ActivityLogEntry['category'],
+    action: string,
+    details?: string,
+    actor: ActivityLogEntry['actor'] = 'system',
+    severity: ActivityLogEntry['severity'] = 'info'
+  ) => {
+    const entry: ActivityLogEntry = {
+      id: `log-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      timestamp: new Date(),
+      category,
+      action,
+      details,
+      actor,
+      severity
+    };
+    setActivityLog(prev => [...prev, entry]);
+  }, []);
+
+  // Initialize activity log on component mount
+  useEffect(() => {
+    addActivityLog('system', 'Alert Detail Opened', `Viewing incident ${alert.id}: ${alert.title}`, 'user', 'info');
+  }, [alert.id, alert.title, addActivityLog]);
+
+  // Log tab changes
+  useEffect(() => {
+    if (activeTab) {
+      addActivityLog(activeTab as ActivityLogEntry['category'], `Switched to ${activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} tab`, undefined, 'user', 'info');
+    }
+  }, [activeTab, addActivityLog]);
+
   const handleTakeAction = (action: string) => {
     setActionsTaken(prev => [...prev, action]);
+    addActivityLog('decision', `Action Initiated: ${action}`, undefined, 'user', 'success');
     toast.success(`Action initiated: ${action}`);
   };
 
@@ -417,6 +502,7 @@ export function IRCAlertDetail({ alert, onBack }: IRCAlertDetailProps) {
   const handleDeepDive = (strategy: string) => {
     setSelectedStrategy(strategy);
     setDeepDiveOpen(true);
+    addActivityLog('ai', `Viewed Strategy Deep Dive`, getStrategyDetails(strategy).title, 'user', 'info');
   };
 
   // Simulate a single strategy
@@ -424,7 +510,9 @@ export function IRCAlertDetail({ alert, onBack }: IRCAlertDetailProps) {
     if (simulatingStrategy) return;
     
     setSimulatingStrategy(strategy);
-    toast.info(`Simulating: ${getStrategyDetails(strategy).title}`);
+    const strategyTitle = getStrategyDetails(strategy).title;
+    addActivityLog('decision', `Simulation Started`, strategyTitle, 'helios', 'info');
+    toast.info(`Simulating: ${strategyTitle}`);
     
     // Simulate with delay
     await new Promise(resolve => setTimeout(resolve, 2000));
@@ -434,19 +522,22 @@ export function IRCAlertDetail({ alert, onBack }: IRCAlertDetailProps) {
     const times = ['6 min', '8 min', '10 min', '12 min', '15 min'];
     const recoveries = ['95.2%', '96.7%', '97.3%', '98.1%', '94.5%'];
     
+    const result = {
+      simulated: true,
+      successProbability: confidence,
+      estimatedTime: times[Math.floor(Math.random() * times.length)],
+      recoveryRate: recoveries[Math.floor(Math.random() * recoveries.length)],
+      riskLevel: confidence > 93 ? 'Low' : confidence > 88 ? 'Medium' : 'High'
+    };
+    
     setPerStrategyResults(prev => ({
       ...prev,
-      [strategy]: {
-        simulated: true,
-        successProbability: confidence,
-        estimatedTime: times[Math.floor(Math.random() * times.length)],
-        recoveryRate: recoveries[Math.floor(Math.random() * recoveries.length)],
-        riskLevel: confidence > 93 ? 'Low' : confidence > 88 ? 'Medium' : 'High'
-      }
+      [strategy]: result
     }));
     
     setSimulatingStrategy(null);
-    toast.success(`Simulation complete for: ${getStrategyDetails(strategy).title}`);
+    addActivityLog('decision', `Simulation Complete`, `${strategyTitle} - Success Rate: ${confidence}%`, 'helios', 'success');
+    toast.success(`Simulation complete for: ${strategyTitle}`);
   };
 
   // Apply a strategy (only one can be applied at a time)
@@ -459,11 +550,13 @@ export function IRCAlertDetail({ alert, onBack }: IRCAlertDetailProps) {
     if (appliedStrategy === strategy) {
       // Unapply
       setAppliedStrategy(null);
+      addActivityLog('decision', 'Strategy Unapplied', getStrategyDetails(strategy).title, 'user', 'warning');
       toast.info('Strategy unapplied');
     } else {
       // Apply
       setAppliedStrategy(strategy);
       const details = getStrategyDetails(strategy);
+      addActivityLog('decision', 'Strategy Applied', details.title, 'user', 'success');
       toast.success(`Applied: ${details.title}`);
     }
   };
@@ -476,6 +569,7 @@ export function IRCAlertDetail({ alert, onBack }: IRCAlertDetailProps) {
 
     setSimulationRunning(true);
     setShowSimulationResults(false);
+    addActivityLog('decision', 'Multi-Strategy Simulation Started', `${selectedStrategies.length} strategies selected`, 'helios', 'info');
 
     const steps: SimulationStep[] = [
       { id: 1, name: 'Analyzing selected strategies', status: 'pending', duration: 1000 },
@@ -521,6 +615,7 @@ export function IRCAlertDetail({ alert, onBack }: IRCAlertDetailProps) {
 
     setSimulationRunning(false);
     setShowSimulationResults(true);
+    addActivityLog('decision', 'Multi-Strategy Simulation Complete', `Average success rate: ${avgConfidence.toFixed(1)}%`, 'helios', 'success');
     toast.success('Simulation complete!');
   };
 
@@ -528,6 +623,7 @@ export function IRCAlertDetail({ alert, onBack }: IRCAlertDetailProps) {
     setActiveTab('execution');
     setExecutionActive(true);
     setExecutionProgress(0);
+    addActivityLog('execution', 'Execution Pipeline Started', 'Initializing agent workflow', 'helios', 'info');
 
     // Initialize agents
     const agents: ExecutionAgent[] = [
@@ -555,6 +651,7 @@ export function IRCAlertDetail({ alert, onBack }: IRCAlertDetailProps) {
 
     for (let i = 0; i < agentTasks.length; i++) {
       const { agent, task, duration } = agentTasks[i];
+      addActivityLog('execution', `${agents[agent].name}`, task, 'helios', 'info');
 
       setExecutionAgents(prev => prev.map((a, idx) =>
         idx === agent
@@ -579,6 +676,8 @@ export function IRCAlertDetail({ alert, onBack }: IRCAlertDetailProps) {
 
     setExecutionActive(false);
     setExecutionProgress(100);
+    setResolutionComplete(true);
+    setAlertStatus('resolved');
 
     // Generate impact metrics
     setImpactMetrics({
@@ -589,6 +688,15 @@ export function IRCAlertDetail({ alert, onBack }: IRCAlertDetailProps) {
       mttr: '14m 23s',
       affectedUsersResolved: 98.7
     });
+
+    addActivityLog('execution', 'Execution Complete', 'All agents finished successfully', 'helios', 'success');
+    addActivityLog('impact', 'Resolution Complete', 'All systems restored', 'system', 'success');
+    addActivityLog('system', 'Status Updated', 'Alert status changed to Resolved', 'system', 'success');
+    
+    // Notify parent of status change
+    if (onStatusUpdate) {
+      onStatusUpdate(alert.id, 'resolved');
+    }
 
     toast.success('Execution complete! View Impact tab for results.');
   };
@@ -607,18 +715,21 @@ export function IRCAlertDetail({ alert, onBack }: IRCAlertDetailProps) {
         },
         appliedAt: new Date()
       });
+      addActivityLog('decision', 'Strategy Finalized', getStrategyDetails(appliedStrategy).title, 'user', 'success');
     }
     
     // Save simulation results before ending war room
     if (showSimulationResults && simulationResults) {
       setWarRoomSimulationResults(simulationResults);
     }
+    
+    addActivityLog('decision', 'War Room Ended', `Session duration: ${decisionTime}s`, 'user', 'info');
     warRoomActions.resetState();
     setActiveTab('decision');
     setPerStrategyResults({});
     setAppliedStrategy(null);
     toast.info("War Room session has ended. View your finalized strategy in the Decision tab.");
-  }, [warRoomActions, setActiveTab, showSimulationResults, simulationResults, appliedStrategy, perStrategyResults]);
+  }, [warRoomActions, setActiveTab, showSimulationResults, simulationResults, appliedStrategy, perStrategyResults, decisionTime, addActivityLog]);
 
   const handleResetSimulation = useCallback(() => {
     setSelectedStrategies([]);
@@ -629,8 +740,9 @@ export function IRCAlertDetail({ alert, onBack }: IRCAlertDetailProps) {
     setPerStrategyResults({});
     setAppliedStrategy(null);
     setFinalizedStrategy(null);
+    addActivityLog('decision', 'Simulation Reset', 'All strategies cleared', 'user', 'warning');
     toast.info("Simulation has been reset.");
-  }, []);
+  }, [addActivityLog]);
 
   const handleReturnToDashboard = useCallback(() => {
     closeWarRoomDialog();
@@ -643,8 +755,9 @@ export function IRCAlertDetail({ alert, onBack }: IRCAlertDetailProps) {
 
 
   const handleInitiateWarRoom = useCallback(() => {
+    addActivityLog('decision', 'War Room Initiated', 'Assembling response team', 'user', 'info');
     initiateWarRoom();
-  }, [initiateWarRoom]);
+  }, [initiateWarRoom, addActivityLog]);
 
   const getStrategyDetails = (strategy: string) => {
     return aiStrategyDetails[strategy] || {
@@ -655,6 +768,122 @@ export function IRCAlertDetail({ alert, onBack }: IRCAlertDetailProps) {
       estimatedImpact: 'Expected positive impact on system recovery.',
       riskMitigation: 'Standard rollback procedures in place.'
     };
+  };
+
+  // Override handler
+  const handleOverride = () => {
+    if (!overrideJustification.trim()) {
+      toast.error('Please provide a justification for the override');
+      return;
+    }
+
+    const overrideLabels: Record<string, string> = {
+      priority: 'Priority Override',
+      strategy: 'Strategy Override',
+      approval: 'Approval Chain Override',
+      resource: 'Resource Allocation Override',
+      sla: 'SLA Override'
+    };
+
+    addActivityLog('override', overrideLabels[overrideType], overrideJustification, 'user', 'warning');
+    
+    switch (overrideType) {
+      case 'priority':
+        toast.success('Priority override applied - Incident escalated to Critical');
+        break;
+      case 'strategy':
+        toast.success('Strategy override applied - Manual intervention authorized');
+        break;
+      case 'approval':
+        toast.success('Approval chain bypassed - Emergency action authorized');
+        break;
+      case 'resource':
+        toast.success('Additional resources allocated - Scaling initiated');
+        break;
+      case 'sla':
+        toast.success('SLA override acknowledged - Documented for review');
+        break;
+    }
+
+    setOverrideDialogOpen(false);
+    setOverrideJustification('');
+  };
+
+  // Generate incident report
+  const generateIncidentReport = () => {
+    const report = `
+================================================================================
+                         INCIDENT RESOLUTION REPORT
+================================================================================
+
+INCIDENT DETAILS
+--------------------------------------------------------------------------------
+Alert ID:        ${alert.id}
+Title:           ${alert.title}
+Severity:        ${alert.severity.toUpperCase()}
+Status:          ${alertStatus.toUpperCase()}
+Region:          ${alert.region}
+Timestamp:       ${new Date(alert.timestamp).toLocaleString()}
+
+AFFECTED SYSTEMS
+--------------------------------------------------------------------------------
+${alert.affectedSystems.map(s => `• ${s}`).join('\n')}
+
+BUSINESS IMPACT
+--------------------------------------------------------------------------------
+${alert.businessImpact}
+SLA Risk: ${alert.slaRisk}
+
+RESOLUTION SUMMARY
+--------------------------------------------------------------------------------
+Resolution Time:       ${impactMetrics?.mttr || 'N/A'}
+Service Restoration:   ${impactMetrics?.serviceRestoration || 'N/A'}%
+Transactions Recovered: ${impactMetrics?.transactionsRecovered?.toLocaleString() || 'N/A'}
+Revenue Protected:     ${impactMetrics?.revenueProtected || 'N/A'}
+SLA Compliance:        ${impactMetrics?.slaCompliance || 'N/A'}%
+
+STRATEGY APPLIED
+--------------------------------------------------------------------------------
+${finalizedStrategy ? `
+Strategy:     ${getStrategyDetails(finalizedStrategy.strategy).title}
+Applied At:   ${finalizedStrategy.appliedAt.toLocaleString()}
+Success Rate: ${finalizedStrategy.result.successProbability}%
+Risk Level:   ${finalizedStrategy.result.riskLevel}
+` : 'No finalized strategy recorded'}
+
+ACTIVITY LOG
+--------------------------------------------------------------------------------
+${activityLog.map(log => `[${log.timestamp.toLocaleTimeString()}] [${log.category.toUpperCase()}] ${log.action}${log.details ? ` - ${log.details}` : ''}`).join('\n')}
+
+================================================================================
+                    Generated by HELIOS Incident Response System
+                         ${new Date().toLocaleString()}
+================================================================================
+    `.trim();
+
+    return report;
+  };
+
+  const handleCopyReport = () => {
+    const report = generateIncidentReport();
+    navigator.clipboard.writeText(report);
+    addActivityLog('impact', 'Report Copied', 'Incident report copied to clipboard', 'user', 'info');
+    toast.success('Report copied to clipboard');
+  };
+
+  const handleDownloadReport = () => {
+    const report = generateIncidentReport();
+    const blob = new Blob([report], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `incident-report-${alert.id}-${new Date().toISOString().split('T')[0]}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    addActivityLog('impact', 'Report Downloaded', `File: incident-report-${alert.id}.txt`, 'user', 'info');
+    toast.success('Report downloaded');
   };
 
   return (
@@ -690,13 +919,20 @@ export function IRCAlertDetail({ alert, onBack }: IRCAlertDetailProps) {
           <div className="flex items-center gap-2 mb-1">
             <Badge className={cn(
               "text-xs px-2 py-0.5",
-              alert.severity === 'critical' && 'bg-error/80 text-error-foreground',
-              alert.severity === 'high' && 'bg-muted/80 text-foreground',
-              alert.severity === 'medium' && 'bg-muted/60 text-foreground',
-              alert.severity === 'low' && 'bg-muted/40 text-muted-foreground'
+              alertStatus === 'resolved' && 'bg-emerald-500 text-white',
+              alertStatus !== 'resolved' && alert.severity === 'critical' && 'bg-error/80 text-error-foreground',
+              alertStatus !== 'resolved' && alert.severity === 'high' && 'bg-muted/80 text-foreground',
+              alertStatus !== 'resolved' && alert.severity === 'medium' && 'bg-muted/60 text-foreground',
+              alertStatus !== 'resolved' && alert.severity === 'low' && 'bg-muted/40 text-muted-foreground'
             )}>
-              {alert.severity.toUpperCase()}
+              {alertStatus === 'resolved' ? 'RESOLVED' : alert.severity.toUpperCase()}
             </Badge>
+            {alertStatus === 'resolved' && (
+              <Badge className="text-xs px-2 py-0.5 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                <CheckCircle className="h-3 w-3 mr-1" />
+                Incident Closed
+              </Badge>
+            )}
             <span className="font-mono text-xs text-muted-foreground">{alert.id}</span>
           </div>
           <h1 className="text-xl font-semibold text-foreground/90">{alert.title}</h1>
@@ -726,18 +962,27 @@ export function IRCAlertDetail({ alert, onBack }: IRCAlertDetailProps) {
             <p className="text-sm font-medium">{alert.affectedSystems.length} affected</p>
           </div>
         </div>
-        <div className="flex items-center gap-3 p-3 rounded bg-error/5 border border-error/20">
-          <DollarSign className="h-5 w-5 text-error" />
+        <div className={cn(
+          "flex items-center gap-3 p-3 rounded border",
+          alertStatus === 'resolved' ? 'bg-emerald-950/20 border-emerald-500/20' : 'bg-error/5 border-error/20'
+        )}>
+          {alertStatus === 'resolved' ? (
+            <CheckCircle className="h-5 w-5 text-emerald-400" />
+          ) : (
+            <DollarSign className="h-5 w-5 text-error" />
+          )}
           <div>
-            <p className="text-xs text-muted-foreground">Impact</p>
-            <p className="text-sm font-medium text-error">{alert.businessImpact.split(' - ')[1] || alert.businessImpact}</p>
+            <p className="text-xs text-muted-foreground">{alertStatus === 'resolved' ? 'Status' : 'Impact'}</p>
+            <p className={cn("text-sm font-medium", alertStatus === 'resolved' ? 'text-emerald-400' : 'text-error')}>
+              {alertStatus === 'resolved' ? 'Resolved' : (alert.businessImpact.split(' - ')[1] || alert.businessImpact)}
+            </p>
           </div>
         </div>
       </div>
 
       {/* Main Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full flex-1 flex flex-col min-h-0">
-        <TabsList className="grid grid-cols-5 h-auto gap-1.5 bg-muted/30 p-1 shrink-0">
+        <TabsList className="grid grid-cols-6 h-auto gap-1.5 bg-muted/30 p-1 shrink-0">
           <TabsTrigger value="overview" className="text-sm px-3 py-2">
             <FileText className="h-4 w-4 mr-1.5" />
             Overview
@@ -757,6 +1002,10 @@ export function IRCAlertDetail({ alert, onBack }: IRCAlertDetailProps) {
           <TabsTrigger value="impact" className="text-sm px-3 py-2">
             <TrendingUp className="h-4 w-4 mr-1.5" />
             Impact
+          </TabsTrigger>
+          <TabsTrigger value="activity" className="text-sm px-3 py-2">
+            <ScrollText className="h-4 w-4 mr-1.5" />
+            Activity Log
           </TabsTrigger>
         </TabsList>
 
@@ -896,7 +1145,13 @@ export function IRCAlertDetail({ alert, onBack }: IRCAlertDetailProps) {
                   <CheckCircle className="h-4 w-4" />
                   Approve
                 </Button>
-                <Button size="sm" variant="outline" onClick={() => handleTakeAction('Override Prioritization')} className="h-9 text-sm px-4">
+                <Button 
+                  size="sm" 
+                  variant="outline" 
+                  onClick={() => setOverrideDialogOpen(true)} 
+                  className="h-9 text-sm px-4 gap-1.5 border-amber-500/30 text-amber-400 hover:bg-amber-500/10"
+                >
+                  <AlertOctagon className="h-4 w-4" />
                   Override
                 </Button>
               </div>
@@ -1117,19 +1372,23 @@ export function IRCAlertDetail({ alert, onBack }: IRCAlertDetailProps) {
 
                   {/* Execution Complete */}
                   {executionProgress === 100 && (
-                    <div className="flex items-center justify-between p-3 rounded bg-success/5 border border-success/20">
-                      <div className="flex items-center gap-2">
-                        <CheckCircle className="h-4 w-4 text-success" />
-                        <span className="text-sm font-medium text-success">Execution Complete</span>
+                    <div className="p-4 rounded-lg border border-success/30 bg-gradient-to-r from-success/10 to-transparent">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-success/20 flex items-center justify-center">
+                          <CheckCircle className="h-5 w-5 text-success" />
+                        </div>
+                        <div>
+                          <p className="font-semibold text-success">Execution Complete</p>
+                          <p className="text-sm text-muted-foreground">All agents have finished their tasks successfully</p>
+                        </div>
                       </div>
                       <Button
+                        className="mt-4 w-full gap-2"
                         onClick={() => setActiveTab('impact')}
-                        variant="outline"
-                        size="sm"
-                        className="h-8 px-3 text-xs gap-1.5"
                       >
-                        <BarChart3 className="h-3.5 w-3.5" />
-                        View Impact
+                        <TrendingUp className="h-4 w-4" />
+                        View Impact Results
+                        <ArrowRight className="h-4 w-4" />
                       </Button>
                     </div>
                   )}
@@ -1143,60 +1402,62 @@ export function IRCAlertDetail({ alert, onBack }: IRCAlertDetailProps) {
         <TabsContent value="impact" className="mt-3 flex-1 min-h-0 overflow-hidden">
           <Card className="h-full border-border/30">
             <CardHeader className="py-3">
-              <CardTitle className="flex items-center gap-2 text-base font-semibold text-foreground/90">
-                <TrendingUp className="h-4 w-4 text-muted-foreground" />
-                Resolution Impact Analysis
+              <CardTitle className="flex items-center justify-between text-base font-semibold text-foreground/90">
+                <div className="flex items-center gap-2">
+                  <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                  Resolution Impact Analysis
+                </div>
+                {resolutionComplete && (
+                  <Button
+                    size="sm"
+                    onClick={() => setReportDialogOpen(true)}
+                    className="gap-1.5 h-8 text-xs bg-emerald-600 hover:bg-emerald-700"
+                  >
+                    <FileText className="h-3.5 w-3.5" />
+                    Generate Report
+                  </Button>
+                )}
               </CardTitle>
             </CardHeader>
-            <CardContent className="pt-0 h-[calc(100%-60px)]">
+            <CardContent className="pt-0">
               {!impactMetrics ? (
-                <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
-                  <BarChart3 className="h-10 w-10 mb-3 opacity-30" />
+                <div className="text-center py-8 text-muted-foreground">
+                  <BarChart3 className="h-10 w-10 mx-auto mb-3 opacity-30" />
                   <p className="text-sm">No impact data available</p>
-                  <p className="text-xs">Execute strategies to see impact analysis</p>
+                  <p className="text-xs">Execute strategies to see resolution impact</p>
                 </div>
               ) : (
-                <div className="grid grid-cols-12 gap-4 h-full">
-                  {/* Left Column - Key Metrics */}
-                  <div className="col-span-8 flex flex-col gap-4">
-                    {/* Primary Metrics Row */}
+                <div className="grid grid-cols-12 gap-4">
+                  {/* Left Column - Metrics */}
+                  <div className="col-span-8 space-y-4">
+                    {/* Key Metrics Grid */}
                     <div className="grid grid-cols-3 gap-3">
-                      <div className="p-4 rounded-lg bg-gradient-to-br from-success/10 to-success/5 border border-success/20">
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="text-xs font-medium text-success/80">Service Restoration</span>
-                          <CheckCircle className="h-4 w-4 text-success" />
-                        </div>
+                      <div className="p-4 rounded-lg border border-success/20 bg-success/5 text-center">
                         <p className="text-3xl font-bold text-success">{impactMetrics.serviceRestoration}%</p>
+                        <p className="text-xs text-muted-foreground mt-1">Service Restoration</p>
                       </div>
-                      <div className="p-4 rounded-lg bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/20">
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="text-xs font-medium text-primary/80">Revenue Protected</span>
-                          <DollarSign className="h-4 w-4 text-primary" />
-                        </div>
-                        <p className="text-3xl font-bold text-primary">{impactMetrics.revenueProtected}</p>
+                      <div className="p-4 rounded-lg border border-primary/20 bg-primary/5 text-center">
+                        <p className="text-3xl font-bold text-primary">{impactMetrics.transactionsRecovered.toLocaleString()}</p>
+                        <p className="text-xs text-muted-foreground mt-1">Transactions Recovered</p>
                       </div>
-                      <div className="p-4 rounded-lg bg-gradient-to-br from-success/10 to-success/5 border border-success/20">
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="text-xs font-medium text-success/80">SLA Compliance</span>
-                          <Shield className="h-4 w-4 text-success" />
-                        </div>
-                        <p className="text-3xl font-bold text-success">{impactMetrics.slaCompliance}%</p>
+                      <div className="p-4 rounded-lg border border-emerald-500/20 bg-emerald-950/20 text-center">
+                        <p className="text-3xl font-bold text-emerald-400">{impactMetrics.revenueProtected}</p>
+                        <p className="text-xs text-muted-foreground mt-1">Revenue Protected</p>
                       </div>
                     </div>
 
-                    {/* Secondary Metrics Row */}
                     <div className="grid grid-cols-3 gap-3">
-                      <div className="p-3 rounded-lg border border-border/30 bg-muted/5">
-                        <p className="text-xs text-muted-foreground mb-1">Transactions Recovered</p>
-                        <p className="text-xl font-bold">{impactMetrics.transactionsRecovered.toLocaleString()}</p>
+                      <div className="p-3 rounded-lg border border-border/30 bg-muted/5 text-center">
+                        <p className="text-xl font-bold">{impactMetrics.slaCompliance}%</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">SLA Compliance</p>
                       </div>
-                      <div className="p-3 rounded-lg border border-border/30 bg-muted/5">
-                        <p className="text-xs text-muted-foreground mb-1">Mean Time to Resolve</p>
+                      <div className="p-3 rounded-lg border border-border/30 bg-muted/5 text-center">
                         <p className="text-xl font-bold">{impactMetrics.mttr}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">Mean Time to Resolve</p>
                       </div>
-                      <div className="p-3 rounded-lg border border-border/30 bg-muted/5">
-                        <p className="text-xs text-muted-foreground mb-1">Users Resolved</p>
+                      <div className="p-3 rounded-lg border border-border/30 bg-muted/5 text-center">
                         <p className="text-xl font-bold">{impactMetrics.affectedUsersResolved}%</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">Users Recovered</p>
                       </div>
                     </div>
 
@@ -1229,13 +1490,27 @@ export function IRCAlertDetail({ alert, onBack }: IRCAlertDetailProps) {
                           <p className="text-xs text-muted-foreground">96.7% routed to healthy region</p>
                         </div>
                       </div>
-                      <div className="p-3 rounded-lg border border-border/30 bg-muted/5 flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center shrink-0">
-                          <Clock className="h-4 w-4 text-muted-foreground" />
+                      <div className={cn(
+                        "p-3 rounded-lg border flex items-center gap-3",
+                        resolutionComplete 
+                          ? "border-success/20 bg-success/5" 
+                          : "border-border/30 bg-muted/5"
+                      )}>
+                        <div className={cn(
+                          "w-8 h-8 rounded-full flex items-center justify-center shrink-0",
+                          resolutionComplete ? "bg-success/20" : "bg-muted"
+                        )}>
+                          {resolutionComplete ? (
+                            <CheckCircle className="h-4 w-4 text-success" />
+                          ) : (
+                            <Clock className="h-4 w-4 text-muted-foreground" />
+                          )}
                         </div>
                         <div className="min-w-0">
                           <p className="text-sm font-medium">DNS Propagation</p>
-                          <p className="text-xs text-muted-foreground">3.3% may need cache clear</p>
+                          <p className="text-xs text-muted-foreground">
+                            {resolutionComplete ? 'Complete - All regions updated' : '3.3% may need cache clear'}
+                          </p>
                         </div>
                       </div>
                     </div>
@@ -1294,6 +1569,73 @@ export function IRCAlertDetail({ alert, onBack }: IRCAlertDetailProps) {
                   </div>
                 </div>
               )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Activity Log Tab */}
+        <TabsContent value="activity" className="mt-3 flex-1 min-h-0 overflow-hidden">
+          <Card className="h-full border-border/30">
+            <CardHeader className="py-3">
+              <CardTitle className="flex items-center justify-between text-base font-semibold text-foreground/90">
+                <div className="flex items-center gap-2">
+                  <ScrollText className="h-4 w-4 text-muted-foreground" />
+                  Activity Log
+                </div>
+                <Badge variant="outline" className="text-xs px-2 py-0.5">
+                  {activityLog.length} entries
+                </Badge>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="pt-0 h-[calc(100%-60px)]">
+              <ScrollArea className="h-full pr-4">
+                <div className="space-y-2">
+                  {activityLog.length === 0 ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <ScrollText className="h-10 w-10 mx-auto mb-3 opacity-30" />
+                      <p className="text-sm">No activity logged yet</p>
+                      <p className="text-xs">Actions will be recorded as you interact with the incident</p>
+                    </div>
+                  ) : (
+                    [...activityLog].reverse().map((entry) => (
+                      <div
+                        key={entry.id}
+                        className={cn(
+                          "flex items-start gap-3 p-3 rounded-lg border transition-all",
+                          entry.severity === 'error' && "border-red-500/30 bg-red-950/20",
+                          entry.severity === 'warning' && "border-amber-500/30 bg-amber-950/20",
+                          entry.severity === 'success' && "border-emerald-500/30 bg-emerald-950/20",
+                          entry.severity === 'info' && "border-border/30 bg-muted/10"
+                        )}
+                      >
+                        <div className={cn(
+                          "w-7 h-7 rounded-full flex items-center justify-center shrink-0",
+                          categoryColors[entry.category]
+                        )}>
+                          {categoryIcons[entry.category]}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="text-sm font-medium">{entry.action}</span>
+                            <Badge variant="outline" className={cn("text-[10px] px-1.5 capitalize", categoryColors[entry.category])}>
+                              {entry.category}
+                            </Badge>
+                            <Badge variant="outline" className="text-[10px] px-1.5">
+                              {entry.actor}
+                            </Badge>
+                          </div>
+                          {entry.details && (
+                            <p className="text-xs text-muted-foreground">{entry.details}</p>
+                          )}
+                          <p className="text-[10px] text-muted-foreground/60 mt-1">
+                            {entry.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                          </p>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </ScrollArea>
             </CardContent>
           </Card>
         </TabsContent>
@@ -1361,6 +1703,119 @@ export function IRCAlertDetail({ alert, onBack }: IRCAlertDetailProps) {
               })()}
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Override Dialog */}
+      <Dialog open={overrideDialogOpen} onOpenChange={setOverrideDialogOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertOctagon className="h-5 w-5 text-amber-400" />
+              Override Actions
+            </DialogTitle>
+            <DialogDescription>
+              Apply an override action. All overrides are logged for audit purposes.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="space-y-3">
+              <Label>Override Type</Label>
+              <RadioGroup value={overrideType} onValueChange={setOverrideType} className="space-y-2">
+                <div className="flex items-center space-x-3 p-3 rounded-lg border border-border/30 hover:bg-muted/10 cursor-pointer">
+                  <RadioGroupItem value="priority" id="priority" />
+                  <Label htmlFor="priority" className="flex-1 cursor-pointer">
+                    <span className="font-medium">Priority Override</span>
+                    <p className="text-xs text-muted-foreground">Escalate or de-escalate incident priority</p>
+                  </Label>
+                </div>
+                <div className="flex items-center space-x-3 p-3 rounded-lg border border-border/30 hover:bg-muted/10 cursor-pointer">
+                  <RadioGroupItem value="strategy" id="strategy" />
+                  <Label htmlFor="strategy" className="flex-1 cursor-pointer">
+                    <span className="font-medium">Strategy Override</span>
+                    <p className="text-xs text-muted-foreground">Bypass AI recommendations with manual strategy</p>
+                  </Label>
+                </div>
+                <div className="flex items-center space-x-3 p-3 rounded-lg border border-border/30 hover:bg-muted/10 cursor-pointer">
+                  <RadioGroupItem value="approval" id="approval" />
+                  <Label htmlFor="approval" className="flex-1 cursor-pointer">
+                    <span className="font-medium">Approval Chain Override</span>
+                    <p className="text-xs text-muted-foreground">Skip approval chain for emergency actions</p>
+                  </Label>
+                </div>
+                <div className="flex items-center space-x-3 p-3 rounded-lg border border-border/30 hover:bg-muted/10 cursor-pointer">
+                  <RadioGroupItem value="resource" id="resource" />
+                  <Label htmlFor="resource" className="flex-1 cursor-pointer">
+                    <span className="font-medium">Resource Allocation Override</span>
+                    <p className="text-xs text-muted-foreground">Force additional resources or capacity</p>
+                  </Label>
+                </div>
+                <div className="flex items-center space-x-3 p-3 rounded-lg border border-border/30 hover:bg-muted/10 cursor-pointer">
+                  <RadioGroupItem value="sla" id="sla" />
+                  <Label htmlFor="sla" className="flex-1 cursor-pointer">
+                    <span className="font-medium">SLA Override</span>
+                    <p className="text-xs text-muted-foreground">Acknowledge SLA breach with documented reason</p>
+                  </Label>
+                </div>
+              </RadioGroup>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Justification (Required)</Label>
+              <Textarea
+                placeholder="Provide a detailed justification for this override..."
+                value={overrideJustification}
+                onChange={(e) => setOverrideJustification(e.target.value)}
+                className="min-h-[100px]"
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setOverrideDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleOverride} className="gap-2 bg-amber-600 hover:bg-amber-700">
+              <AlertOctagon className="h-4 w-4" />
+              Apply Override
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Report Dialog */}
+      <Dialog open={reportDialogOpen} onOpenChange={setReportDialogOpen}>
+        <DialogContent className="max-w-3xl max-h-[85vh]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <FileText className="h-5 w-5 text-emerald-400" />
+              Incident Resolution Report
+            </DialogTitle>
+            <DialogDescription>
+              Complete incident report generated by HELIOS
+            </DialogDescription>
+          </DialogHeader>
+
+          <ScrollArea className="h-[500px] pr-4">
+            <pre className="text-xs font-mono whitespace-pre-wrap bg-muted/30 p-4 rounded-lg border border-border/30">
+              {generateIncidentReport()}
+            </pre>
+          </ScrollArea>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setReportDialogOpen(false)}>
+              Close
+            </Button>
+            <Button variant="outline" onClick={handleCopyReport} className="gap-2">
+              <Copy className="h-4 w-4" />
+              Copy to Clipboard
+            </Button>
+            <Button onClick={handleDownloadReport} className="gap-2 bg-emerald-600 hover:bg-emerald-700">
+              <Download className="h-4 w-4" />
+              Download Report
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
