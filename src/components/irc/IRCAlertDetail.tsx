@@ -22,10 +22,17 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
+interface ResolvedMetrics {
+  mttr: string;
+  revenueProtected: string;
+  transactionsRecovered: number;
+  serviceRestoration: number;
+}
+
 interface IRCAlertDetailProps {
   alert: IRCAlert;
   onBack: () => void;
-  onStatusUpdate?: (alertId: string, newStatus: string) => void;
+  onStatusUpdate?: (alertId: string, newStatus: string, metrics?: ResolvedMetrics) => void;
 }
 
 interface ExecutionAgent {
@@ -424,11 +431,28 @@ export function IRCAlertDetail({ alert, onBack, onStatusUpdate }: IRCAlertDetail
   const [activityLog, setActivityLog] = useState<ActivityLogEntry[]>([]);
   
   // Resolution states
-  const [resolutionComplete, setResolutionComplete] = useState(false);
+  const [resolutionComplete, setResolutionComplete] = useState(alert.status === 'resolved');
   const [alertStatus, setAlertStatus] = useState(alert.status);
   
   // Report Dialog
   const [reportDialogOpen, setReportDialogOpen] = useState(false);
+  
+  // Override data states
+  const [overrideData, setOverrideData] = useState<{
+    priorityEscalated: boolean;
+    strategyOverridden: boolean;
+    approvalBypassed: boolean;
+    resourcesAllocated: boolean;
+    slaAcknowledged: boolean;
+    overrideHistory: Array<{ type: string; justification: string; timestamp: Date }>;
+  }>({
+    priorityEscalated: false,
+    strategyOverridden: false,
+    approvalBypassed: false,
+    resourcesAllocated: false,
+    slaAcknowledged: false,
+    overrideHistory: []
+  });
   
   // Override Dialog
   const [overrideDialogOpen, setOverrideDialogOpen] = useState(false);
@@ -679,26 +703,32 @@ export function IRCAlertDetail({ alert, onBack, onStatusUpdate }: IRCAlertDetail
     setResolutionComplete(true);
     setAlertStatus('resolved');
 
-    // Generate impact metrics
-    setImpactMetrics({
+    // Generate impact metrics with realistic data
+    const metrics = {
       serviceRestoration: 97.3,
       transactionsRecovered: 94847,
       revenueProtected: '$2.1M',
       slaCompliance: 99.92,
       mttr: '14m 23s',
       affectedUsersResolved: 98.7
-    });
+    };
+    setImpactMetrics(metrics);
 
     addActivityLog('execution', 'Execution Complete', 'All agents finished successfully', 'helios', 'success');
-    addActivityLog('impact', 'Resolution Complete', 'All systems restored', 'system', 'success');
-    addActivityLog('system', 'Status Updated', 'Alert status changed to Resolved', 'system', 'success');
+    addActivityLog('impact', 'Resolution Complete', 'All systems restored to normal operation', 'system', 'success');
+    addActivityLog('system', 'Status Updated', 'Alert status changed from Active to Resolved', 'system', 'success');
     
-    // Notify parent of status change
+    // Notify parent of status change with metrics
     if (onStatusUpdate) {
-      onStatusUpdate(alert.id, 'resolved');
+      onStatusUpdate(alert.id, 'resolved', {
+        mttr: metrics.mttr,
+        revenueProtected: metrics.revenueProtected,
+        transactionsRecovered: metrics.transactionsRecovered,
+        serviceRestoration: metrics.serviceRestoration
+      });
     }
 
-    toast.success('Execution complete! View Impact tab for results.');
+    toast.success('Execution complete! Incident resolved. View Impact tab for detailed results.');
   };
 
   const handleEndWarRoom = useCallback(() => {
@@ -770,7 +800,7 @@ export function IRCAlertDetail({ alert, onBack, onStatusUpdate }: IRCAlertDetail
     };
   };
 
-  // Override handler
+  // Override handler with realistic data updates
   const handleOverride = () => {
     if (!overrideJustification.trim()) {
       toast.error('Please provide a justification for the override');
@@ -785,23 +815,48 @@ export function IRCAlertDetail({ alert, onBack, onStatusUpdate }: IRCAlertDetail
       sla: 'SLA Override'
     };
 
+    // Add to override history
+    const newOverride = {
+      type: overrideType,
+      justification: overrideJustification,
+      timestamp: new Date()
+    };
+    
+    setOverrideData(prev => ({
+      ...prev,
+      overrideHistory: [...prev.overrideHistory, newOverride],
+      ...(overrideType === 'priority' && { priorityEscalated: true }),
+      ...(overrideType === 'strategy' && { strategyOverridden: true }),
+      ...(overrideType === 'approval' && { approvalBypassed: true }),
+      ...(overrideType === 'resource' && { resourcesAllocated: true }),
+      ...(overrideType === 'sla' && { slaAcknowledged: true }),
+    }));
+
     addActivityLog('override', overrideLabels[overrideType], overrideJustification, 'user', 'warning');
     
     switch (overrideType) {
       case 'priority':
-        toast.success('Priority override applied - Incident escalated to Critical');
+        addActivityLog('system', 'Priority Escalated', 'Incident priority changed from High to Critical', 'system', 'warning');
+        toast.success('Priority override applied - Incident escalated to Critical. All teams notified.');
         break;
       case 'strategy':
-        toast.success('Strategy override applied - Manual intervention authorized');
+        addActivityLog('system', 'Strategy Override Active', 'AI recommendations bypassed - Manual control enabled', 'system', 'warning');
+        setAppliedStrategy(null);
+        setFinalizedStrategy(null);
+        toast.success('Strategy override applied - Manual intervention mode activated. AI recommendations paused.');
         break;
       case 'approval':
-        toast.success('Approval chain bypassed - Emergency action authorized');
+        addActivityLog('system', 'Approval Chain Bypassed', 'Emergency authorization granted by IRC Leader', 'system', 'warning');
+        toast.success('Approval chain bypassed - Emergency action authorized. Audit trail logged.');
         break;
       case 'resource':
-        toast.success('Additional resources allocated - Scaling initiated');
+        addActivityLog('system', 'Resources Allocated', 'Additional capacity provisioned: +500% compute, +300% network', 'helios', 'info');
+        addActivityLog('execution', 'Scaling Initiated', 'HELIOS spinning up 2,400 additional containers across 3 regions', 'helios', 'success');
+        toast.success('Additional resources allocated - Auto-scaling initiated. Capacity increased by 500%.');
         break;
       case 'sla':
-        toast.success('SLA override acknowledged - Documented for review');
+        addActivityLog('system', 'SLA Override Documented', `Breach acknowledged: ${overrideJustification}`, 'system', 'warning');
+        toast.success('SLA override acknowledged - Documented for executive review. Customer Success notified.');
         break;
     }
 
@@ -1165,6 +1220,39 @@ ${activityLog.map(log => `[${log.timestamp.toLocaleTimeString()}] [${log.categor
                   <Badge variant="outline" className="text-xs px-2 py-0.5 bg-success/10 text-success">
                     {decisionTime}s
                   </Badge>
+                </div>
+              )}
+
+              {/* Active Override Status */}
+              {overrideData.overrideHistory.length > 0 && (
+                <div className="p-3 rounded-lg border border-amber-500/30 bg-amber-950/20">
+                  <div className="flex items-center gap-2 mb-2">
+                    <AlertOctagon className="h-4 w-4 text-amber-400" />
+                    <span className="text-sm font-semibold text-amber-400">Active Overrides ({overrideData.overrideHistory.length})</span>
+                  </div>
+                  <div className="space-y-2">
+                    {overrideData.overrideHistory.map((override, idx) => (
+                      <div key={idx} className="flex items-start gap-2 text-xs">
+                        <Badge variant="outline" className="text-[10px] px-1.5 shrink-0 bg-amber-500/10 text-amber-400 border-amber-500/30 capitalize">
+                          {override.type}
+                        </Badge>
+                        <span className="text-muted-foreground flex-1">{override.justification}</span>
+                        <span className="text-muted-foreground/60 shrink-0">
+                          {override.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                  {overrideData.resourcesAllocated && (
+                    <div className="mt-2 pt-2 border-t border-amber-500/20">
+                      <div className="flex items-center gap-4 text-xs">
+                        <span className="text-muted-foreground">Resources:</span>
+                        <Badge className="bg-emerald-500/20 text-emerald-400 text-[10px]">+500% Compute</Badge>
+                        <Badge className="bg-emerald-500/20 text-emerald-400 text-[10px]">+300% Network</Badge>
+                        <Badge className="bg-emerald-500/20 text-emerald-400 text-[10px]">+2,400 Containers</Badge>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -2091,11 +2179,11 @@ ${activityLog.map(log => `[${log.timestamp.toLocaleTimeString()}] [${log.categor
 
           {/* Footer */}
           <div className="px-6 py-4 border-t border-border/30 bg-muted/5 shrink-0">
-            <div className="flex items-center justify-between">
-              <p className="text-xs text-muted-foreground">
+            <div className="flex flex-col items-center gap-3">
+              <p className="text-xs text-muted-foreground text-center">
                 {warRoomActive ? 'War room session active. All participants can collaborate in real-time.' : 'Assemble the bridge to start coordinating incident response.'}
               </p>
-              <Button variant="destructive" size="sm" onClick={handleEndWarRoom} className="px-6">
+              <Button variant="destructive" size="sm" onClick={handleEndWarRoom} className="px-8">
                 End War Room
               </Button>
             </div>
