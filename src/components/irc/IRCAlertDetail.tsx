@@ -976,7 +976,6 @@ ${activityLog.map(log => `[${log.timestamp.toLocaleTimeString()}] [${log.categor
               "text-xs px-2 py-0.5",
               alertStatus === 'resolved' && 'bg-emerald-500 text-white',
               alertStatus !== 'resolved' && alert.severity === 'critical' && 'bg-error/80 text-error-foreground',
-              alertStatus !== 'resolved' && alert.severity === 'high' && 'bg-muted/80 text-foreground',
               alertStatus !== 'resolved' && alert.severity === 'medium' && 'bg-muted/60 text-foreground',
               alertStatus !== 'resolved' && alert.severity === 'low' && 'bg-muted/40 text-muted-foreground'
             )}>
