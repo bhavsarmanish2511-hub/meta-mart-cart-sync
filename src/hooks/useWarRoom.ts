@@ -92,17 +92,23 @@ export const useWarRoom = () => {
     const updateParticipantStatus = (id: string, status: ParticipantStatus) => {
       setParticipants(prev => prev.map(p => p.id === id ? { ...p, status } : p));
     };
+
+    // Shuffle participants for random joining order
+    const shuffledParticipants = [...allParticipants].sort(() => Math.random() - 0.5);
   
-    for (const person of allParticipants) {
-      await delay(500);
+    for (const person of shuffledParticipants) {
+      // Random delay between 300-800ms before calling
+      await delay(300 + Math.random() * 500);
       updateParticipantStatus(person.id, 'calling');
       addLog(`Calling ${person.name} (${person.role})...`);
   
-      await delay(1000);
+      // Random delay between 800-1500ms for joining
+      await delay(800 + Math.random() * 700);
       updateParticipantStatus(person.id, 'joining');
       addLog(`${person.name} is joining the bridge...`);
   
-      await delay(1000);
+      // Random delay between 600-1200ms for joined
+      await delay(600 + Math.random() * 600);
       updateParticipantStatus(person.id, 'joined');
       addLog(`${person.name} has joined the bridge.`);
     }
