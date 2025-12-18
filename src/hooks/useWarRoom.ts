@@ -96,24 +96,28 @@ export const useWarRoom = () => {
     // Shuffle participants for random joining order
     const shuffledParticipants = [...allParticipants].sort(() => Math.random() - 0.5);
   
-    for (const person of shuffledParticipants) {
-      // Random delay between 300-800ms before calling
-      await delay(300 + Math.random() * 500);
+    // Fast parallel joining - all within 5 seconds
+    const joinPromises = shuffledParticipants.map(async (person, index) => {
+      // Staggered start with random offset (0-400ms per person)
+      const startDelay = index * 150 + Math.random() * 250;
+      await delay(startDelay);
+      
       updateParticipantStatus(person.id, 'calling');
       addLog(`Calling ${person.name} (${person.role})...`);
   
-      // Random delay between 800-1500ms for joining
-      await delay(800 + Math.random() * 700);
+      // Quick transition to joining (150-300ms)
+      await delay(150 + Math.random() * 150);
       updateParticipantStatus(person.id, 'joining');
       addLog(`${person.name} is joining the bridge...`);
   
-      // Random delay between 600-1200ms for joined
-      await delay(600 + Math.random() * 600);
+      // Quick transition to joined (200-400ms)
+      await delay(200 + Math.random() * 200);
       updateParticipantStatus(person.id, 'joined');
       addLog(`${person.name} has joined the bridge.`);
-    }
-  
-    await delay(500);
+    });
+
+    await Promise.all(joinPromises);
+    await delay(300);
     setIsActive(true);
     addLog('All participants have joined. War Room is now live.');
     const elapsed = ((Date.now() - (startTime ?? Date.now())) / 1000).toFixed(1);
