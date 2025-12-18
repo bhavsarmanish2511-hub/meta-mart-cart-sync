@@ -103,80 +103,80 @@ const aiStrategyDetails: Record<string, {
   estimatedImpact: string;
   riskMitigation: string;
 }> = {
-  'Recommend immediate failover to US-West-2 based on 94.7% historical success rate for similar incidents': {
-    title: 'Immediate Failover Strategy',
-    confidence: 94.7,
-    howItWorks: 'This strategy leverages automated failover scripts to redirect all traffic from the degraded US-East-1 region to the healthy US-West-2 region. The system will spin up pre-configured containers, update DNS records, and promote database replicas.',
+  'Execute immediate failover to US-West-2 - 94.7% historical success rate for AZ-level outages': {
+    title: 'Full Regional Failover',
+    confidence: 87.3,
+    howItWorks: 'Route 53 Application Recovery Controller triggers coordinated failover across all services. Aurora Global Database promotes US-West-2 read replica to primary writer (RTO <60s, RPO 0). ALB target groups update to US-West-2 ECS tasks. CloudFront origins switch to Oregon edge locations.',
     resolutionPath: [
-      'Initiate container spin-up in US-West-2 (847 containers)',
-      'Update DNS TTL to 60 seconds for faster propagation',
-      'Promote read replicas to primary in secondary region',
-      'Redirect load balancer traffic to healthy endpoints',
-      'Validate health checks across all services',
-      'Complete traffic steering to US-West-2'
+      'Route 53 ARC initiates failover sequence',
+      'Aurora Global DB promotes replica (45-60s)',
+      'ECS services register with new ALB targets (2-3min)',
+      'Health checks validate endpoint availability',
+      'DNS TTL expiration completes traffic shift',
+      'Monitor for 5 minutes post-failover'
     ],
     estimatedImpact: 'Full service restoration within 15 minutes. Expected to recover 96.7% of failed transactions.',
     riskMitigation: 'Automatic rollback triggers if health checks fail. Database sync verified before traffic switch.'
   },
-  'Suggest prioritizing EU payment gateway (€847K/hour) over APAC (¥423K/hour) if partial failover required': {
-    title: 'Prioritized Regional Recovery',
-    confidence: 91.2,
-    howItWorks: 'Revenue-optimized partial failover that prioritizes high-value regions. EU processing takes precedence based on real-time revenue impact analysis. APAC follows with 3-minute delay to ensure stability.',
+  'Prioritize EU-West-1 traffic routing first (currently €1.2M/hour peak) before AP-Southeast-1 (¥890K/hour)': {
+    title: 'Prioritized EU/APAC Traffic Steering',
+    confidence: 94.6,
+    howItWorks: 'Route 53 weighted routing policies redirect EU traffic to EU-Central-1 (Frankfurt) and APAC traffic to AP-Northeast-1 (Tokyo). US-East-1 traffic gets rate-limited to 30% capacity via ALB rules. Preserves revenue in peak regions while minimizing impact during US off-peak.',
     resolutionPath: [
-      'Analyze real-time revenue by region',
-      'Initiate EU payment gateway failover first',
-      'Validate EU transaction processing',
-      'Begin APAC failover sequence',
-      'Monitor cross-region latency',
-      'Confirm all regional gateways operational'
+      'Update Route 53 weighted policies (EU: 100% → Frankfurt)',
+      'Apply ALB rate limiting rules for US traffic',
+      'Scale EU-Central-1 and AP-Northeast-1 by 200%',
+      'Monitor latency and error rates per region',
+      'Gradual US traffic migration after EU/APAC stable',
+      'Full failover if US-East-1 degrades further'
     ],
     estimatedImpact: 'EU recovery in 8 minutes, APAC in 11 minutes. Revenue protection: €1.2M saved.',
     riskMitigation: 'Regional isolation prevents cascade failures. Independent rollback per region.'
   },
-  'Pre-emptively scale authentication services by 340% based on post-failover traffic patterns': {
-    title: 'Proactive Auth Scaling',
-    confidence: 88.5,
-    howItWorks: 'Based on historical failover patterns, authentication services experience a 340% traffic spike as users retry failed sessions. This strategy pre-scales auth infrastructure before the surge hits.',
+  'Pre-scale US-West-2 ECS services by 340% based on incoming traffic redistribution': {
+    title: 'Proactive ECS Auto-Scaling',
+    confidence: 91.8,
+    howItWorks: 'Pre-emptively scale ECS Fargate tasks in US-West-2 before traffic arrives. Uses predictive scaling based on current US-East-1 traffic patterns. Prevents cold-start latency and ensures capacity is ready when DNS failover completes.',
     resolutionPath: [
-      'Analyze historical post-failover traffic patterns',
-      'Provision additional auth pods (current + 340%)',
-      'Update connection pool limits',
-      'Pre-warm authentication caches',
-      'Enable enhanced session recovery',
-      'Monitor auth success rates'
+      'Calculate required capacity from US-East-1 metrics',
+      'Provision ECS tasks (current × 3.4)',
+      'Pre-warm application caches',
+      'Update service discovery endpoints',
+      'Enable enhanced health checks',
+      'Monitor task registration status'
     ],
-    estimatedImpact: 'Prevents secondary outage. Auth success rate maintained above 99.5%.',
+    estimatedImpact: 'Zero cold-start delays during failover. Capacity ready within 4 minutes.',
     riskMitigation: 'Auto-scaling policies set to handle unexpected load. Circuit breakers active.'
   },
-  'Alert Customer Success to prepare communication for 23 enterprise clients with >$1M annual contracts': {
-    title: 'Enterprise Client Communication',
-    confidence: 96.3,
-    howItWorks: 'Proactive outreach to high-value enterprise clients reduces support ticket volume by 67% and maintains trust. Automated status page updates combined with personalized outreach.',
+  'Enable Route 53 Application Recovery Controller for coordinated multi-service failover': {
+    title: 'Route 53 ARC Orchestration',
+    confidence: 89.4,
+    howItWorks: 'AWS Route 53 Application Recovery Controller provides single-action failover across all application components. Ensures DNS, ALB, Aurora, and ElastiCache fail over in coordinated sequence with dependency-aware ordering.',
     resolutionPath: [
-      'Identify 23 enterprise clients by contract value',
-      'Generate personalized status updates',
-      'Trigger automated status page update',
-      'Initiate direct account manager outreach',
-      'Prepare compensation/SLA credit calculations',
-      'Schedule post-incident review calls'
+      'Activate Route 53 ARC recovery group',
+      'Verify readiness checks pass for all cells',
+      'Execute coordinated failover action',
+      'Monitor routing control state changes',
+      'Validate traffic shifting to DR region',
+      'Confirm all services healthy in target region'
     ],
-    estimatedImpact: 'Customer satisfaction maintained. Reduces escalations by 78%.',
-    riskMitigation: 'Communication templates pre-approved by legal. Escalation paths documented.'
+    estimatedImpact: 'Single-action failover reduces coordination time by 67%. RTO under 2 minutes.',
+    riskMitigation: 'Readiness checks prevent failover to unhealthy regions. Rollback available within 60s.'
   },
-  'Recommend extending database connection pool timeout from 30s to 120s during transition': {
-    title: 'Database Connection Optimization',
-    confidence: 92.1,
-    howItWorks: 'During failover, database connections experience temporary latency spikes. Extending timeout prevents premature connection drops and reduces retry storms that can overwhelm the system.',
+  'Extend Aurora connection timeout from 30s to 120s during Global Database promotion': {
+    title: 'Aurora Connection Pool Optimization',
+    confidence: 83.7,
+    howItWorks: 'During Aurora Global Database promotion, connections experience 45-90 second latency spikes. Extending pool timeout prevents connection drops and retry storms that can overwhelm newly promoted primary.',
     resolutionPath: [
-      'Increase connection pool timeout to 120s',
+      'Update RDS proxy connection timeout to 120s',
+      'Modify application connection pool settings',
       'Enable connection keep-alive optimization',
       'Activate query queuing for overflow',
       'Monitor connection pool utilization',
-      'Gradually restore normal timeouts post-recovery',
-      'Validate transaction completion rates'
+      'Restore normal timeouts after stabilization'
     ],
-    estimatedImpact: 'Prevents 23% of transaction failures during transition window.',
-    riskMitigation: 'Automatic timeout restoration after stability confirmed. Alerting for pool exhaustion.'
+    estimatedImpact: 'Prevents 23% of transaction failures during Global DB promotion window.',
+    riskMitigation: 'Automatic timeout restoration after stability confirmed. Pool exhaustion alerts active.'
   },
   'Implement adaptive rate limiting based on user behavior patterns': {
     title: 'Adaptive Rate Limiting',
@@ -554,16 +554,20 @@ export function IRCAlertDetail({ alert, onBack, onStatusUpdate }: IRCAlertDetail
     await new Promise(resolve => setTimeout(resolve, 2000));
     
     const details = aiStrategyDetails[strategy];
-    const confidence = details?.confidence || 90;
-    const times = ['6 min', '8 min', '10 min', '12 min', '15 min'];
-    const recoveries = ['95.2%', '96.7%', '97.3%', '98.1%', '94.5%'];
+    const baseConfidence = details?.confidence || 85;
+    // Add realistic variance of ±3%
+    const variance = (Math.random() - 0.5) * 6;
+    const successProbability = Math.min(99.9, Math.max(60, baseConfidence + variance));
+    
+    const times = ['5 min', '8 min', '12 min', '15 min', '18 min', '22 min'];
+    const recoveries = ['92.4%', '94.8%', '96.2%', '97.5%', '98.3%'];
     
     const result = {
       simulated: true,
-      successProbability: confidence,
+      successProbability: parseFloat(successProbability.toFixed(1)),
       estimatedTime: times[Math.floor(Math.random() * times.length)],
       recoveryRate: recoveries[Math.floor(Math.random() * recoveries.length)],
-      riskLevel: confidence > 93 ? 'Low' : confidence > 88 ? 'Medium' : 'High'
+      riskLevel: successProbability > 92 ? 'Low' : successProbability > 85 ? 'Medium' : 'High'
     };
     
     setPerStrategyResults(prev => ({
@@ -572,7 +576,7 @@ export function IRCAlertDetail({ alert, onBack, onStatusUpdate }: IRCAlertDetail
     }));
     
     setSimulatingStrategy(null);
-    addActivityLog('decision', `Simulation Complete`, `${strategyTitle} - Success Rate: ${confidence}%`, 'helios', 'success');
+    addActivityLog('decision', `Simulation Complete`, `${strategyTitle} - Success Rate: ${result.successProbability}%`, 'helios', 'success');
     toast.success(`Simulation complete for: ${strategyTitle}`);
   };
 

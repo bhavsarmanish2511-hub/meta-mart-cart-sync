@@ -61,6 +61,8 @@ export interface SimulationScenario {
   id: string;
   name: string;
   description: string;
+  howItWorks?: string;
+  resolutionPath?: string;
   riskLevel: 'low' | 'medium' | 'high';
   estimatedTime: string;
   successRate: number;
@@ -147,26 +149,52 @@ export const ircAlerts: IRCAlert[] = [
         { 
           id: 'SIM-001', 
           name: 'Full Regional Failover to US-West-2', 
-          description: 'Complete traffic migration using Route 53 ARC and Aurora Global Database. Maintains data consistency with zero RPO.', 
+          description: 'Complete traffic migration using Route 53 ARC and Aurora Global Database. Maintains data consistency with zero RPO.',
+          howItWorks: 'Route 53 Application Recovery Controller triggers coordinated failover across all services. Aurora Global Database promotes US-West-2 read replica to primary writer (RTO <60s, RPO 0). ALB target groups update to US-West-2 ECS tasks. CloudFront origins switch to Oregon edge locations. ElastiCache replication promotes secondary cluster.',
+          resolutionPath: '1. Route 53 ARC initiates failover sequence → 2. Aurora Global DB promotes replica (45-60s) → 3. ECS services register with new ALB targets (2-3min) → 4. Health checks validate endpoint availability → 5. DNS TTL expiration completes traffic shift → 6. Monitor for 5 minutes post-failover → 7. Confirm data consistency via checksums',
           riskLevel: 'medium', 
           estimatedTime: '15 minutes', 
-          successRate: 94.7 
+          successRate: 87.3 
         },
         { 
           id: 'SIM-002', 
-          name: 'Prioritized EU/APAC Failover', 
-          description: 'Migrate EU-West-1 and AP-Southeast-1 traffic first (peak hours), maintain US traffic on degraded primary with rate limiting.', 
+          name: 'Prioritized EU/APAC Traffic Steering', 
+          description: 'Migrate EU-West-1 and AP-Southeast-1 traffic first (currently in peak hours), maintain US traffic on degraded primary with aggressive rate limiting.',
+          howItWorks: 'Route 53 weighted routing policies redirect EU traffic to EU-Central-1 (Frankfurt) and APAC traffic to AP-Northeast-1 (Tokyo). US-East-1 traffic gets rate-limited to 30% capacity via ALB rules. This preserves revenue in peak regions while minimizing impact during US off-peak hours.',
+          resolutionPath: '1. Update Route 53 weighted policies (EU: 100% → Frankfurt, APAC: 100% → Tokyo) → 2. Apply ALB rate limiting rules for US traffic → 3. Scale EU-Central-1 and AP-Northeast-1 by 200% → 4. Monitor latency and error rates per region → 5. Gradual US traffic migration after EU/APAC stable → 6. Full failover if US-East-1 degrades further',
           riskLevel: 'low', 
           estimatedTime: '8 minutes', 
-          successRate: 98.2 
+          successRate: 94.6 
         },
         { 
           id: 'SIM-003', 
+          name: 'Hybrid Failover with Cache Warming', 
+          description: 'Partial failover with pre-warmed ElastiCache clusters in secondary region to minimize cold-start latency impact.',
+          howItWorks: 'Before executing full failover, initiate cache replication from US-East-1 to US-West-2 ElastiCache. This prevents cache miss storms that typically cause 40% performance degradation post-failover. Aurora read replica handles read traffic while cache warms.',
+          resolutionPath: '1. Trigger ElastiCache cross-region replication → 2. Wait for cache sync (3-5 min for hot keys) → 3. Route read traffic to Aurora US-West-2 replica → 4. Promote Aurora replica to primary → 5. Switch write traffic → 6. Validate cache hit ratio >85% → 7. Complete DNS failover',
+          riskLevel: 'medium', 
+          estimatedTime: '12 minutes', 
+          successRate: 91.2 
+        },
+        { 
+          id: 'SIM-004', 
           name: 'Wait for AWS Recovery', 
-          description: 'Monitor AWS status page. AWS ETA: 45 minutes. Risk of extended SLA breach and cumulative revenue loss.', 
+          description: 'Monitor AWS status page and wait for provider resolution. AWS ETA: 45 minutes. High risk of extended SLA breach.',
+          howItWorks: 'Passive monitoring approach relying on AWS infrastructure team to resolve the underlying fiber cut. Continuous polling of AWS Health Dashboard API. Customer communication prepared but not sent. All automated failover mechanisms on standby.',
+          resolutionPath: '1. Monitor AWS Health Dashboard every 60 seconds → 2. Track AWS Case ID: AWS-7834521 for updates → 3. Prepare customer communication templates → 4. Keep failover runbooks ready for manual trigger → 5. Escalate to AWS TAM at 30-minute mark if no progress → 6. Auto-trigger failover if error rate exceeds 50%',
           riskLevel: 'high', 
           estimatedTime: '45-90 minutes (AWS dependent)', 
-          successRate: 67.3 
+          successRate: 62.8 
+        },
+        { 
+          id: 'SIM-005', 
+          name: 'Graceful Degradation Mode', 
+          description: 'Enable circuit breakers and serve cached responses for non-critical endpoints while payment APIs fail over.',
+          howItWorks: 'Hystrix circuit breakers activate for non-essential services (analytics, recommendations, notifications). CDN serves stale cached content for static pages. Only payment-critical paths get priority routing to healthy infrastructure. Reduces blast radius while preserving core revenue.',
+          resolutionPath: '1. Activate circuit breakers for non-critical services → 2. Configure CDN stale-while-revalidate for 30 minutes → 3. Priority queue payment API requests → 4. Failover only payment-gateway and auth services → 5. Monitor payment success rate target: >95% → 6. Gradually restore non-critical services post-recovery',
+          riskLevel: 'low', 
+          estimatedTime: '5 minutes', 
+          successRate: 96.4 
         },
       ],
       regionalData: [
@@ -265,8 +293,9 @@ export const ircAlerts: IRCAlert[] = [
         { id: 'WF-003', name: 'Auth0 Capacity Scaling', status: 'pending', duration: 'Est. 8m', dependencies: ['WF-001'] },
       ],
       simulationScenarios: [
-        { id: 'SIM-001', name: 'Cloudflare Under Attack Mode', description: 'Enable JS challenge for all visitors. Legitimate users see 5-second interstitial.', riskLevel: 'low', estimatedTime: '2 minutes', successRate: 96.4 },
-        { id: 'SIM-002', name: 'Geo-Block Attack Sources', description: 'Block traffic from RU, CN, BR, ID, VN. May affect 0.3% legitimate users.', riskLevel: 'medium', estimatedTime: '5 minutes', successRate: 91.2 },
+        { id: 'SIM-001', name: 'Cloudflare Under Attack Mode', description: 'Enable JS challenge for all visitors. Legitimate users see 5-second interstitial.', howItWorks: 'Cloudflare WAF enables JavaScript challenge that requires browser execution, filtering out bot traffic that cannot execute JS. Legitimate users pass challenge automatically after 5-second verification.', resolutionPath: '1. Enable Under Attack Mode via Cloudflare API → 2. Monitor challenge pass rate → 3. Adjust sensitivity threshold based on false positives → 4. Disable after attack subsides', riskLevel: 'low', estimatedTime: '2 minutes', successRate: 89.7 },
+        { id: 'SIM-002', name: 'Geo-Block Attack Sources', description: 'Block traffic from top attacking countries: RU, CN, BR, ID, VN. May affect 0.3% legitimate users.', howItWorks: 'WAF firewall rules block all traffic originating from identified attack source countries at edge level. GDPR-compliant blocking with appropriate error messaging for affected regions.', resolutionPath: '1. Analyze attack source IPs by country → 2. Deploy geo-blocking rules via WAF → 3. Monitor blocked request volume → 4. Review false positive reports → 5. Gradually whitelist legitimate IPs', riskLevel: 'medium', estimatedTime: '5 minutes', successRate: 84.3 },
+        { id: 'SIM-003', name: 'Adaptive Rate Limiting', description: 'Implement behavioral rate limiting based on request patterns and user reputation scores.', howItWorks: 'ML-based bot scoring analyzes request patterns, device fingerprints, and behavioral signals. Requests scoring below threshold get rate-limited progressively rather than blocked outright.', resolutionPath: '1. Enable bot management ML scoring → 2. Set threshold at score 30 → 3. Apply progressive rate limits (10→5→1 req/min) → 4. Monitor authentication success rate → 5. Tune thresholds based on results', riskLevel: 'low', estimatedTime: '8 minutes', successRate: 92.1 },
       ],
     },
   },
@@ -329,8 +358,9 @@ export const ircAlerts: IRCAlert[] = [
         { id: 'WF-003', name: 'IOPS Propagation', status: 'in-progress', duration: '18m 34s', dependencies: ['WF-002'] },
       ],
       simulationScenarios: [
-        { id: 'SIM-001', name: 'Increase Provisioned IOPS', description: 'Scale Aurora storage from 10K to 30K IOPS. Takes 15-20 minutes to propagate.', riskLevel: 'low', estimatedTime: '20 minutes', successRate: 99.1 },
-        { id: 'SIM-002', name: 'Enable Read Query Caching', description: 'Implement application-level caching with 30-second TTL. Immediate effect but stale data risk.', riskLevel: 'medium', estimatedTime: '5 minutes', successRate: 94.5 },
+        { id: 'SIM-001', name: 'Increase Provisioned IOPS', description: 'Scale Aurora storage from 10K to 30K IOPS. Takes 15-20 minutes to propagate.', howItWorks: 'Aurora storage auto-scaling triggered via modify-db-cluster API. IOPS increase allows writer instance to handle higher write throughput, reducing replication queue backlog.', resolutionPath: '1. Execute modify-db-cluster with new IOPS value → 2. Monitor StorageIOPS CloudWatch metric → 3. Wait for "storage-optimization" status → 4. Verify replication lag reduction → 5. Document baseline for capacity planning', riskLevel: 'low', estimatedTime: '20 minutes', successRate: 97.8 },
+        { id: 'SIM-002', name: 'Enable Read Query Caching', description: 'Implement application-level caching with 30-second TTL. Immediate effect but introduces stale data risk.', howItWorks: 'Redis cache layer intercepts read queries and serves cached results. Cache invalidation on write operations. Reduces read replica load by 60-70% for frequently accessed data.', resolutionPath: '1. Deploy Redis cache configuration → 2. Update application connection strings → 3. Set TTL based on data freshness requirements → 4. Monitor cache hit ratio → 5. Implement cache warming for critical queries', riskLevel: 'medium', estimatedTime: '5 minutes', successRate: 88.4 },
+        { id: 'SIM-003', name: 'Query Optimization Sprint', description: 'Identify and optimize top 10 slow queries contributing to replication lag.', howItWorks: 'Analyze pg_stat_statements for queries with highest total_time. Add missing indexes, rewrite inefficient JOINs, and implement query hints for problematic execution plans.', resolutionPath: '1. Query pg_stat_statements for top offenders → 2. Run EXPLAIN ANALYZE on slow queries → 3. Add covering indexes where beneficial → 4. Rewrite queries using CTEs where applicable → 5. Monitor query execution time post-optimization', riskLevel: 'low', estimatedTime: '45 minutes', successRate: 82.6 },
       ],
     },
   },
@@ -392,8 +422,8 @@ export const ircAlerts: IRCAlert[] = [
         { id: 'WF-003', name: 'Certificate Deployment', status: 'pending', duration: 'Est. 15m', dependencies: ['WF-002'] },
       ],
       simulationScenarios: [
-        { id: 'SIM-001', name: 'Restore DNS + Auto-Renew', description: 'Add ACM CNAME records to Route 53, trigger automatic renewal', riskLevel: 'low', estimatedTime: '30 minutes', successRate: 99.8 },
-        { id: 'SIM-002', name: 'Manual Certificate Import', description: 'Generate Let\'s Encrypt certificate and import to ACM manually', riskLevel: 'low', estimatedTime: '2 hours', successRate: 100 },
+        { id: 'SIM-001', name: 'Restore DNS + Auto-Renew', description: 'Add ACM CNAME records to Route 53, trigger automatic certificate renewal via DNS validation.', howItWorks: 'ACM DNS validation requires specific CNAME records in Route 53 hosted zone. Once records propagate, ACM automatically validates domain ownership and issues renewed certificate.', resolutionPath: '1. Retrieve ACM validation CNAME from certificate details → 2. Add record to Route 53 hosted zone → 3. Wait for DNS propagation (5-10 min) → 4. ACM validates and renews certificate → 5. Verify certificate status changes to "Issued"', riskLevel: 'low', estimatedTime: '30 minutes', successRate: 99.2 },
+        { id: 'SIM-002', name: 'Manual Certificate Import', description: 'Generate Let\'s Encrypt certificate using certbot and import to ACM manually as backup approach.', howItWorks: 'Certbot generates certificate via ACME protocol with HTTP-01 challenge. Certificate files are then imported to ACM, which handles distribution to CloudFront and ALB.', resolutionPath: '1. Run certbot with HTTP-01 challenge → 2. Verify domain ownership via web server → 3. Download certificate files (cert, chain, key) → 4. Import to ACM via aws acm import-certificate → 5. Update CloudFront/ALB to use new certificate ARN', riskLevel: 'low', estimatedTime: '2 hours', successRate: 99.9 },
       ],
     },
   },
