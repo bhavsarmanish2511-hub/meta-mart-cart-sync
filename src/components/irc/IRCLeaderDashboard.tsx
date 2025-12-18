@@ -14,7 +14,7 @@ const severityStyles = {
 };
 
 const statusStyles = {
-  active: 'bg-red-500 text-white font-semibold shadow-sm shadow-red-500/30',
+  active: 'bg-green-500 text-white font-semibold shadow-sm shadow-green-500/30',
   resolved: 'bg-emerald-500 text-white font-medium',
 };
 

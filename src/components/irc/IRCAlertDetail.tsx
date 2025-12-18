@@ -410,7 +410,7 @@ export function IRCAlertDetail({ alert, onBack, onStatusUpdate }: IRCAlertDetail
   const [executionProgress, setExecutionProgress] = useState(0);
   const [impactMetrics, setImpactMetrics] = useState<any>(null);
   const [warRoomSimulationResults, setWarRoomSimulationResults] = useState<any>(null);
-  
+
   // Per-strategy simulation results
   const [perStrategyResults, setPerStrategyResults] = useState<Record<string, {
     simulated: boolean;
@@ -427,7 +427,7 @@ export function IRCAlertDetail({ alert, onBack, onStatusUpdate }: IRCAlertDetail
     individualResults: Record<string, any>;
     appliedAt: Date;
   } | null>(null);
-  
+
   // Multi-strategy combined simulation
   const [combinedSimulationResult, setCombinedSimulationResult] = useState<{
     strategies: string[];
@@ -441,14 +441,14 @@ export function IRCAlertDetail({ alert, onBack, onStatusUpdate }: IRCAlertDetail
 
   // Activity Log state
   const [activityLog, setActivityLog] = useState<ActivityLogEntry[]>([]);
-  
+
   // Resolution states
   const [resolutionComplete, setResolutionComplete] = useState(alert.status === 'resolved');
   const [alertStatus, setAlertStatus] = useState(alert.status);
-  
+
   // Report Dialog
   const [reportDialogOpen, setReportDialogOpen] = useState(false);
-  
+
   // Override data states
   const [overrideData, setOverrideData] = useState<{
     priorityEscalated: boolean;
@@ -465,7 +465,7 @@ export function IRCAlertDetail({ alert, onBack, onStatusUpdate }: IRCAlertDetail
     slaAcknowledged: false,
     overrideHistory: []
   });
-  
+
   // Override Dialog
   const [overrideDialogOpen, setOverrideDialogOpen] = useState(false);
   const [overrideType, setOverrideType] = useState<string>('priority');
@@ -544,24 +544,24 @@ export function IRCAlertDetail({ alert, onBack, onStatusUpdate }: IRCAlertDetail
   // Simulate a single strategy
   const handleSimulateSingleStrategy = async (strategy: string) => {
     if (simulatingStrategy) return;
-    
+
     setSimulatingStrategy(strategy);
     const strategyTitle = getStrategyDetails(strategy).title;
     addActivityLog('decision', `Simulation Started`, strategyTitle, 'helios', 'info');
     toast.info(`Simulating: ${strategyTitle}`);
-    
+
     // Simulate with delay
     await new Promise(resolve => setTimeout(resolve, 2000));
-    
+
     const details = aiStrategyDetails[strategy];
     const baseConfidence = details?.confidence || 85;
     // Add realistic variance of ±3%
     const variance = (Math.random() - 0.5) * 6;
     const successProbability = Math.min(99.9, Math.max(60, baseConfidence + variance));
-    
+
     const times = ['5 min', '8 min', '12 min', '15 min', '18 min', '22 min'];
     const recoveries = ['92.4%', '94.8%', '96.2%', '97.5%', '98.3%'];
-    
+
     const result = {
       simulated: true,
       successProbability: parseFloat(successProbability.toFixed(1)),
@@ -569,12 +569,12 @@ export function IRCAlertDetail({ alert, onBack, onStatusUpdate }: IRCAlertDetail
       recoveryRate: recoveries[Math.floor(Math.random() * recoveries.length)],
       riskLevel: successProbability > 92 ? 'Low' : successProbability > 85 ? 'Medium' : 'High'
     };
-    
+
     setPerStrategyResults(prev => ({
       ...prev,
       [strategy]: result
     }));
-    
+
     setSimulatingStrategy(null);
     addActivityLog('decision', `Simulation Complete`, `${strategyTitle} - Success Rate: ${result.successProbability}%`, 'helios', 'success');
     toast.success(`Simulation complete for: ${strategyTitle}`);
@@ -599,7 +599,7 @@ export function IRCAlertDetail({ alert, onBack, onStatusUpdate }: IRCAlertDetail
   // Simulate multiple selected strategies together
   const handleSimulateMultipleStrategies = async () => {
     const strategiesToSimulate = appliedStrategies.filter(s => !perStrategyResults[s]?.simulated);
-    
+
     if (appliedStrategies.length === 0) {
       toast.error('Please apply at least one strategy to simulate');
       return;
@@ -615,9 +615,9 @@ export function IRCAlertDetail({ alert, onBack, onStatusUpdate }: IRCAlertDetail
       const confidence = details?.confidence || 90;
       const times = ['6 min', '8 min', '10 min', '12 min', '15 min'];
       const recoveries = ['95.2%', '96.7%', '97.3%', '98.1%', '94.5%'];
-      
+
       await new Promise(resolve => setTimeout(resolve, 500));
-      
+
       setPerStrategyResults(prev => ({
         ...prev,
         [strategy]: {
@@ -632,7 +632,7 @@ export function IRCAlertDetail({ alert, onBack, onStatusUpdate }: IRCAlertDetail
 
     // Generate combined result
     await new Promise(resolve => setTimeout(resolve, 1000));
-    
+
     const allResults = appliedStrategies.map(s => {
       const existing = perStrategyResults[s];
       if (existing) return existing;
@@ -650,11 +650,11 @@ export function IRCAlertDetail({ alert, onBack, onStatusUpdate }: IRCAlertDetail
     const avgSuccess = allResults.reduce((acc, r) => acc + r.successProbability, 0) / allResults.length;
     const synergyBonus = appliedStrategies.length > 1 ? Math.min(appliedStrategies.length * 1.2, 4) : 0;
     const combinedSuccess = Math.min(avgSuccess + synergyBonus, 99.9);
-    
+
     const timeReduction = appliedStrategies.length > 1 ? 0.8 : 1;
     const baseTimes = [6, 8, 10, 12, 15];
     const avgTime = baseTimes[Math.floor(Math.random() * baseTimes.length)] * timeReduction;
-    
+
     const synergies: string[] = [];
     if (appliedStrategies.length >= 2) synergies.push('Parallel execution reduces total time by 20%');
     if (appliedStrategies.length >= 3) synergies.push('Multi-vector approach improves resilience');
@@ -806,7 +806,7 @@ export function IRCAlertDetail({ alert, onBack, onStatusUpdate }: IRCAlertDetail
     addActivityLog('execution', 'Execution Complete', 'All agents finished successfully', 'helios', 'success');
     addActivityLog('impact', 'Resolution Complete', 'All systems restored to normal operation', 'system', 'success');
     addActivityLog('system', 'Status Updated', 'Alert status changed from Active to Resolved', 'system', 'success');
-    
+
     // Notify parent of status change with metrics
     if (onStatusUpdate) {
       onStatusUpdate(alert.id, 'resolved', {
@@ -832,7 +832,7 @@ export function IRCAlertDetail({ alert, onBack, onStatusUpdate }: IRCAlertDetail
           riskLevel: 'Low'
         };
       });
-      
+
       setFinalizedStrategies({
         strategies: appliedStrategies,
         combinedResult: combinedSimulationResult || {
@@ -845,16 +845,16 @@ export function IRCAlertDetail({ alert, onBack, onStatusUpdate }: IRCAlertDetail
         individualResults,
         appliedAt: new Date()
       });
-      
+
       const titles = appliedStrategies.map(s => getStrategyDetails(s).title).join(', ');
       addActivityLog('decision', 'Strategies Finalized', `${appliedStrategies.length} strategies: ${titles}`, 'user', 'success');
     }
-    
+
     // Save simulation results before ending war room
     if (showSimulationResults && simulationResults) {
       setWarRoomSimulationResults(simulationResults);
     }
-    
+
     addActivityLog('decision', 'War Room Ended', `Session duration: ${decisionTime}s`, 'user', 'info');
     warRoomActions.resetState();
     setActiveTab('decision');
@@ -925,7 +925,7 @@ export function IRCAlertDetail({ alert, onBack, onStatusUpdate }: IRCAlertDetail
       justification: overrideJustification,
       timestamp: new Date()
     };
-    
+
     setOverrideData(prev => ({
       ...prev,
       overrideHistory: [...prev.overrideHistory, newOverride],
@@ -937,7 +937,7 @@ export function IRCAlertDetail({ alert, onBack, onStatusUpdate }: IRCAlertDetail
     }));
 
     addActivityLog('override', overrideLabels[overrideType], overrideJustification, 'user', 'warning');
-    
+
     switch (overrideType) {
       case 'priority':
         addActivityLog('system', 'Priority Escalated', 'Incident priority changed from High to Critical', 'system', 'warning');
@@ -1148,7 +1148,7 @@ ${activityLog.map(log => `[${log.timestamp.toLocaleTimeString()}] [${log.categor
           </TabsTrigger>
           <TabsTrigger value="ai" className="text-sm px-3 py-2">
             <Brain className="h-4 w-4 mr-1.5" />
-            AI
+            Helios AI
           </TabsTrigger>
           <TabsTrigger value="decision" className="text-sm px-3 py-2">
             <Target className="h-4 w-4 mr-1.5" />
@@ -1300,19 +1300,19 @@ ${activityLog.map(log => `[${log.timestamp.toLocaleTimeString()}] [${log.categor
                 >
                   {warRoomActive ? <><CheckCircle className="h-4 w-4" /> War Room Live</> : (isAssembling ? <><Loader2 className="h-4 w-4 animate-spin" /> Assembling...</> : <><Users className="h-4 w-4" /> Initiate War Room</>)}
                 </Button>
-                <Button size="sm" variant="outline" onClick={() => handleTakeAction('Approve Failover')} className="gap-1.5 h-9 text-sm px-4">
+                {/* <Button size="sm" variant="outline" onClick={() => handleTakeAction('Approve Failover')} className="gap-1.5 h-9 text-sm px-4">
                   <CheckCircle className="h-4 w-4" />
                   Approve
                 </Button>
-                <Button 
-                  size="sm" 
-                  variant="outline" 
-                  onClick={() => setOverrideDialogOpen(true)} 
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setOverrideDialogOpen(true)}
                   className="h-9 text-sm px-4 gap-1.5 border-amber-500/30 text-amber-400 hover:bg-amber-500/10"
                 >
                   <AlertOctagon className="h-4 w-4" />
                   Override
-                </Button>
+                </Button> */}
               </div>
 
               {warRoomActive && (
@@ -1386,7 +1386,7 @@ ${activityLog.map(log => `[${log.timestamp.toLocaleTimeString()}] [${log.categor
                         Clear
                       </Button>
                     </div>
-                    
+
                     {/* Combined Results Summary */}
                     {finalizedStrategies.strategies.length > 1 && finalizedStrategies.combinedResult && (
                       <div className="p-4 rounded-lg bg-gradient-to-r from-emerald-950/50 to-primary/10 border border-emerald-500/30">
@@ -1433,7 +1433,7 @@ ${activityLog.map(log => `[${log.timestamp.toLocaleTimeString()}] [${log.categor
                         )}
                       </div>
                     )}
-                    
+
                     {/* Individual Strategy Cards */}
                     <div className="space-y-3">
                       {finalizedStrategies.strategies.map((strategy, idx) => {
@@ -1467,7 +1467,7 @@ ${activityLog.map(log => `[${log.timestamp.toLocaleTimeString()}] [${log.categor
                         );
                       })}
                     </div>
-                    
+
                     <Button onClick={handleExecuteStrategies} className="w-full gap-2 h-10 bg-emerald-600 hover:bg-emerald-700 text-white">
                       <Zap className="h-4 w-4" />
                       Execute {finalizedStrategies.strategies.length > 1 ? `${finalizedStrategies.strategies.length} Strategies` : 'Strategy'}
@@ -1736,8 +1736,8 @@ ${activityLog.map(log => `[${log.timestamp.toLocaleTimeString()}] [${log.categor
                       </div>
                       <div className={cn(
                         "p-3 rounded-lg border flex items-center gap-3",
-                        resolutionComplete 
-                          ? "border-success/20 bg-success/5" 
+                        resolutionComplete
+                          ? "border-success/20 bg-success/5"
                           : "border-border/30 bg-muted/5"
                       )}>
                         <div className={cn(
@@ -2241,7 +2241,7 @@ ${activityLog.map(log => `[${log.timestamp.toLocaleTimeString()}] [${log.categor
                         const isSimulated = strategyResult?.simulated;
                         const isApplied = appliedStrategies.includes(rec);
                         const isSimulating = simulatingStrategy === rec;
-                        
+
                         return (
                           <div key={i} className={cn(
                             "p-4 rounded-lg border transition-all",
@@ -2263,7 +2263,7 @@ ${activityLog.map(log => `[${log.timestamp.toLocaleTimeString()}] [${log.categor
                                   )}
                                 </div>
                                 <p className="text-xs text-muted-foreground mb-3 line-clamp-2">{rec}</p>
-                                
+
                                 {/* Simulation Results for this strategy */}
                                 {isSimulated && strategyResult && (
                                   <div className="grid grid-cols-4 gap-2 p-3 rounded-lg bg-background/50 border border-border/20 mb-3">
@@ -2293,7 +2293,7 @@ ${activityLog.map(log => `[${log.timestamp.toLocaleTimeString()}] [${log.categor
                                   </div>
                                 )}
                               </div>
-                              
+
                               {/* Action Buttons */}
                               <div className="flex flex-col gap-2 shrink-0">
                                 <Button
@@ -2311,7 +2311,7 @@ ${activityLog.map(log => `[${log.timestamp.toLocaleTimeString()}] [${log.categor
                                     <><Play className="h-3 w-3" />Simulate</>
                                   )}
                                 </Button>
-                                
+
                                 {isSimulated && (
                                   <Button
                                     size="sm"
@@ -2355,7 +2355,7 @@ ${activityLog.map(log => `[${log.timestamp.toLocaleTimeString()}] [${log.categor
                           ))}
                         </div>
                         <p className="text-xs text-muted-foreground">
-                          {combinedSimulationResult 
+                          {combinedSimulationResult
                             ? 'Combined simulation complete. End War Room to finalize.'
                             : 'Run combined simulation or end War Room to finalize.'}
                         </p>
