@@ -420,12 +420,24 @@ export function IRCAlertDetail({ alert, onBack, onStatusUpdate }: IRCAlertDetail
     riskLevel: string;
   }>>({});
   const [simulatingStrategy, setSimulatingStrategy] = useState<string | null>(null);
-  const [appliedStrategy, setAppliedStrategy] = useState<string | null>(null);
-  const [finalizedStrategy, setFinalizedStrategy] = useState<{
-    strategy: string;
-    result: any;
+  const [appliedStrategies, setAppliedStrategies] = useState<string[]>([]);
+  const [finalizedStrategies, setFinalizedStrategies] = useState<{
+    strategies: string[];
+    combinedResult: any;
+    individualResults: Record<string, any>;
     appliedAt: Date;
   } | null>(null);
+  
+  // Multi-strategy combined simulation
+  const [combinedSimulationResult, setCombinedSimulationResult] = useState<{
+    strategies: string[];
+    combinedSuccess: number;
+    combinedTime: string;
+    combinedRecovery: string;
+    overallRisk: string;
+    synergies: string[];
+  } | null>(null);
+  const [isSimulatingCombined, setIsSimulatingCombined] = useState(false);
 
   // Activity Log state
   const [activityLog, setActivityLog] = useState<ActivityLogEntry[]>([]);
@@ -564,25 +576,98 @@ export function IRCAlertDetail({ alert, onBack, onStatusUpdate }: IRCAlertDetail
     toast.success(`Simulation complete for: ${strategyTitle}`);
   };
 
-  // Apply a strategy (only one can be applied at a time)
+  // Apply/unapply strategy (multiple can be applied)
   const handleApplyStrategy = (strategy: string) => {
-    if (appliedStrategy && appliedStrategy !== strategy) {
-      toast.error('Only one strategy can be applied at a time. Please unapply the current strategy first.');
-      return;
-    }
-    
-    if (appliedStrategy === strategy) {
+    if (appliedStrategies.includes(strategy)) {
       // Unapply
-      setAppliedStrategy(null);
+      setAppliedStrategies(prev => prev.filter(s => s !== strategy));
       addActivityLog('decision', 'Strategy Unapplied', getStrategyDetails(strategy).title, 'user', 'warning');
       toast.info('Strategy unapplied');
     } else {
       // Apply
-      setAppliedStrategy(strategy);
+      setAppliedStrategies(prev => [...prev, strategy]);
       const details = getStrategyDetails(strategy);
       addActivityLog('decision', 'Strategy Applied', details.title, 'user', 'success');
       toast.success(`Applied: ${details.title}`);
     }
+  };
+
+  // Simulate multiple selected strategies together
+  const handleSimulateMultipleStrategies = async () => {
+    const strategiesToSimulate = appliedStrategies.filter(s => !perStrategyResults[s]?.simulated);
+    
+    if (appliedStrategies.length === 0) {
+      toast.error('Please apply at least one strategy to simulate');
+      return;
+    }
+
+    setIsSimulatingCombined(true);
+    addActivityLog('decision', 'Combined Simulation Started', `${appliedStrategies.length} strategies`, 'helios', 'info');
+    toast.info(`Simulating ${appliedStrategies.length} strategies together...`);
+
+    // Simulate each strategy individually first
+    for (const strategy of strategiesToSimulate) {
+      const details = aiStrategyDetails[strategy];
+      const confidence = details?.confidence || 90;
+      const times = ['6 min', '8 min', '10 min', '12 min', '15 min'];
+      const recoveries = ['95.2%', '96.7%', '97.3%', '98.1%', '94.5%'];
+      
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      setPerStrategyResults(prev => ({
+        ...prev,
+        [strategy]: {
+          simulated: true,
+          successProbability: confidence,
+          estimatedTime: times[Math.floor(Math.random() * times.length)],
+          recoveryRate: recoveries[Math.floor(Math.random() * recoveries.length)],
+          riskLevel: confidence > 93 ? 'Low' : confidence > 88 ? 'Medium' : 'High'
+        }
+      }));
+    }
+
+    // Generate combined result
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    const allResults = appliedStrategies.map(s => {
+      const existing = perStrategyResults[s];
+      if (existing) return existing;
+      const details = aiStrategyDetails[s];
+      return {
+        simulated: true,
+        successProbability: details?.confidence || 90,
+        estimatedTime: '10 min',
+        recoveryRate: '96%',
+        riskLevel: 'Medium'
+      };
+    });
+
+    // Calculate combined metrics with synergy bonus
+    const avgSuccess = allResults.reduce((acc, r) => acc + r.successProbability, 0) / allResults.length;
+    const synergyBonus = appliedStrategies.length > 1 ? Math.min(appliedStrategies.length * 1.2, 4) : 0;
+    const combinedSuccess = Math.min(avgSuccess + synergyBonus, 99.9);
+    
+    const timeReduction = appliedStrategies.length > 1 ? 0.8 : 1;
+    const baseTimes = [6, 8, 10, 12, 15];
+    const avgTime = baseTimes[Math.floor(Math.random() * baseTimes.length)] * timeReduction;
+    
+    const synergies: string[] = [];
+    if (appliedStrategies.length >= 2) synergies.push('Parallel execution reduces total time by 20%');
+    if (appliedStrategies.length >= 3) synergies.push('Multi-vector approach improves resilience');
+    if (avgSuccess > 92) synergies.push('High-confidence strategies amplify success rate');
+
+    setCombinedSimulationResult({
+      strategies: appliedStrategies,
+      combinedSuccess,
+      combinedTime: `${avgTime.toFixed(0)} min`,
+      combinedRecovery: `${(96 + Math.random() * 3).toFixed(1)}%`,
+      overallRisk: combinedSuccess > 95 ? 'Low' : combinedSuccess > 90 ? 'Medium' : 'High',
+      synergies
+    });
+
+    setIsSimulatingCombined(false);
+    addActivityLog('decision', 'Combined Simulation Complete', `Success: ${combinedSuccess.toFixed(1)}%`, 'helios', 'success');
+    toast.success('Combined simulation complete!');
   };
 
   const handleSimulateStrategies = async () => {
@@ -732,20 +817,33 @@ export function IRCAlertDetail({ alert, onBack, onStatusUpdate }: IRCAlertDetail
   };
 
   const handleEndWarRoom = useCallback(() => {
-    // Save finalized strategy if one was applied
-    if (appliedStrategy) {
-      const result = perStrategyResults[appliedStrategy];
-      setFinalizedStrategy({
-        strategy: appliedStrategy,
-        result: result || {
-          successProbability: getStrategyDetails(appliedStrategy).confidence,
+    // Save finalized strategies if any were applied
+    if (appliedStrategies.length > 0) {
+      const individualResults: Record<string, any> = {};
+      appliedStrategies.forEach(s => {
+        individualResults[s] = perStrategyResults[s] || {
+          successProbability: getStrategyDetails(s).confidence,
           estimatedTime: '12 min',
           recoveryRate: '97.3%',
           riskLevel: 'Low'
+        };
+      });
+      
+      setFinalizedStrategies({
+        strategies: appliedStrategies,
+        combinedResult: combinedSimulationResult || {
+          combinedSuccess: Object.values(individualResults).reduce((a, r) => a + r.successProbability, 0) / appliedStrategies.length,
+          combinedTime: '12 min',
+          combinedRecovery: '97.3%',
+          overallRisk: 'Low',
+          synergies: []
         },
+        individualResults,
         appliedAt: new Date()
       });
-      addActivityLog('decision', 'Strategy Finalized', getStrategyDetails(appliedStrategy).title, 'user', 'success');
+      
+      const titles = appliedStrategies.map(s => getStrategyDetails(s).title).join(', ');
+      addActivityLog('decision', 'Strategies Finalized', `${appliedStrategies.length} strategies: ${titles}`, 'user', 'success');
     }
     
     // Save simulation results before ending war room
@@ -757,9 +855,10 @@ export function IRCAlertDetail({ alert, onBack, onStatusUpdate }: IRCAlertDetail
     warRoomActions.resetState();
     setActiveTab('decision');
     setPerStrategyResults({});
-    setAppliedStrategy(null);
-    toast.info("War Room session has ended. View your finalized strategy in the Decision tab.");
-  }, [warRoomActions, setActiveTab, showSimulationResults, simulationResults, appliedStrategy, perStrategyResults, decisionTime, addActivityLog]);
+    setAppliedStrategies([]);
+    setCombinedSimulationResult(null);
+    toast.info("War Room session has ended. View your finalized strategies in the Decision tab.");
+  }, [warRoomActions, setActiveTab, showSimulationResults, simulationResults, appliedStrategies, perStrategyResults, combinedSimulationResult, decisionTime, addActivityLog]);
 
   const handleResetSimulation = useCallback(() => {
     setSelectedStrategies([]);
@@ -768,8 +867,9 @@ export function IRCAlertDetail({ alert, onBack, onStatusUpdate }: IRCAlertDetail
     setSimulationSteps([]);
     setWarRoomSimulationResults(null);
     setPerStrategyResults({});
-    setAppliedStrategy(null);
-    setFinalizedStrategy(null);
+    setAppliedStrategies([]);
+    setFinalizedStrategies(null);
+    setCombinedSimulationResult(null);
     addActivityLog('decision', 'Simulation Reset', 'All strategies cleared', 'user', 'warning');
     toast.info("Simulation has been reset.");
   }, [addActivityLog]);
@@ -841,8 +941,8 @@ export function IRCAlertDetail({ alert, onBack, onStatusUpdate }: IRCAlertDetail
         break;
       case 'strategy':
         addActivityLog('system', 'Strategy Override Active', 'AI recommendations bypassed - Manual control enabled', 'system', 'warning');
-        setAppliedStrategy(null);
-        setFinalizedStrategy(null);
+        setAppliedStrategies([]);
+        setFinalizedStrategies(null);
         toast.success('Strategy override applied - Manual intervention mode activated. AI recommendations paused.');
         break;
       case 'approval':
@@ -897,14 +997,15 @@ Transactions Recovered: ${impactMetrics?.transactionsRecovered?.toLocaleString()
 Revenue Protected:     ${impactMetrics?.revenueProtected || 'N/A'}
 SLA Compliance:        ${impactMetrics?.slaCompliance || 'N/A'}%
 
-STRATEGY APPLIED
+STRATEGIES APPLIED
 --------------------------------------------------------------------------------
-${finalizedStrategy ? `
-Strategy:     ${getStrategyDetails(finalizedStrategy.strategy).title}
-Applied At:   ${finalizedStrategy.appliedAt.toLocaleString()}
-Success Rate: ${finalizedStrategy.result.successProbability}%
-Risk Level:   ${finalizedStrategy.result.riskLevel}
-` : 'No finalized strategy recorded'}
+${finalizedStrategies ? `
+Strategies Applied: ${finalizedStrategies.strategies.length}
+${finalizedStrategies.strategies.map((s, i) => `${i + 1}. ${getStrategyDetails(s).title}`).join('\n')}
+Applied At:   ${finalizedStrategies.appliedAt.toLocaleString()}
+Combined Success: ${finalizedStrategies.combinedResult?.combinedSuccess?.toFixed(1) || 'N/A'}%
+Overall Risk: ${finalizedStrategies.combinedResult?.overallRisk || 'N/A'}
+` : 'No finalized strategies recorded'}
 
 ACTIVITY LOG
 --------------------------------------------------------------------------------
@@ -1255,8 +1356,8 @@ ${activityLog.map(log => `[${log.timestamp.toLocaleTimeString()}] [${log.categor
                 </div>
               )}
 
-              {/* Finalized Strategy Display */}
-              {finalizedStrategy && !warRoomActive && (
+              {/* Finalized Strategies Display */}
+              {finalizedStrategies && !warRoomActive && (
                 <Card className="border-emerald-500/40 bg-gradient-to-br from-emerald-950/40 to-emerald-950/10">
                   <CardContent className="p-4 space-y-4">
                     <div className="flex items-center justify-between">
@@ -1265,8 +1366,10 @@ ${activityLog.map(log => `[${log.timestamp.toLocaleTimeString()}] [${log.categor
                           <CheckCircle className="h-5 w-5 text-emerald-400" />
                         </div>
                         <div>
-                          <span className="text-sm font-semibold text-emerald-400">Finalized Strategy</span>
-                          <p className="text-xs text-muted-foreground">Applied at {finalizedStrategy.appliedAt.toLocaleTimeString()}</p>
+                          <span className="text-sm font-semibold text-emerald-400">
+                            {finalizedStrategies.strategies.length > 1 ? `${finalizedStrategies.strategies.length} Finalized Strategies` : 'Finalized Strategy'}
+                          </span>
+                          <p className="text-xs text-muted-foreground">Applied at {finalizedStrategies.appliedAt.toLocaleTimeString()}</p>
                         </div>
                       </div>
                       <Button
@@ -1280,48 +1383,98 @@ ${activityLog.map(log => `[${log.timestamp.toLocaleTimeString()}] [${log.categor
                       </Button>
                     </div>
                     
-                    <div className="p-4 rounded-lg bg-background/50 border border-emerald-500/20">
-                      <h4 className="font-semibold text-foreground mb-2">{getStrategyDetails(finalizedStrategy.strategy).title}</h4>
-                      <p className="text-sm text-muted-foreground mb-4">{finalizedStrategy.strategy}</p>
-                      
-                      <div className="grid grid-cols-4 gap-3">
-                        <div className="text-center p-3 rounded-lg bg-emerald-950/30 border border-emerald-500/20">
-                          <p className="text-xl font-bold text-emerald-400">{finalizedStrategy.result.successProbability?.toFixed(0) || getStrategyDetails(finalizedStrategy.strategy).confidence}%</p>
-                          <p className="text-[10px] text-muted-foreground mt-0.5">Success Rate</p>
+                    {/* Combined Results Summary */}
+                    {finalizedStrategies.strategies.length > 1 && finalizedStrategies.combinedResult && (
+                      <div className="p-4 rounded-lg bg-gradient-to-r from-emerald-950/50 to-primary/10 border border-emerald-500/30">
+                        <h5 className="text-xs font-semibold text-emerald-400 mb-3 flex items-center gap-2">
+                          <Zap className="h-3.5 w-3.5" />
+                          Combined Strategy Results
+                        </h5>
+                        <div className="grid grid-cols-4 gap-3">
+                          <div className="text-center p-3 rounded-lg bg-background/50 border border-emerald-500/20">
+                            <p className="text-xl font-bold text-emerald-400">{finalizedStrategies.combinedResult.combinedSuccess?.toFixed(1)}%</p>
+                            <p className="text-[10px] text-muted-foreground mt-0.5">Combined Success</p>
+                          </div>
+                          <div className="text-center p-3 rounded-lg bg-background/50 border border-emerald-500/20">
+                            <p className="text-xl font-bold text-primary">{finalizedStrategies.combinedResult.combinedRecovery}</p>
+                            <p className="text-[10px] text-muted-foreground mt-0.5">Recovery Rate</p>
+                          </div>
+                          <div className="text-center p-3 rounded-lg bg-background/50 border border-emerald-500/20">
+                            <p className="text-xl font-bold">{finalizedStrategies.combinedResult.combinedTime}</p>
+                            <p className="text-[10px] text-muted-foreground mt-0.5">Est. Time</p>
+                          </div>
+                          <div className="text-center p-3 rounded-lg bg-background/50 border border-emerald-500/20">
+                            <Badge className={cn(
+                              "text-xs",
+                              finalizedStrategies.combinedResult.overallRisk === 'Low' && 'bg-emerald-500/20 text-emerald-400',
+                              finalizedStrategies.combinedResult.overallRisk === 'Medium' && 'bg-amber-500/20 text-amber-400',
+                              finalizedStrategies.combinedResult.overallRisk === 'High' && 'bg-error/20 text-error'
+                            )}>
+                              {finalizedStrategies.combinedResult.overallRisk}
+                            </Badge>
+                            <p className="text-[10px] text-muted-foreground mt-1.5">Risk Level</p>
+                          </div>
                         </div>
-                        <div className="text-center p-3 rounded-lg bg-emerald-950/30 border border-emerald-500/20">
-                          <p className="text-xl font-bold text-primary">{finalizedStrategy.result.recoveryRate || '97.3%'}</p>
-                          <p className="text-[10px] text-muted-foreground mt-0.5">Recovery</p>
-                        </div>
-                        <div className="text-center p-3 rounded-lg bg-emerald-950/30 border border-emerald-500/20">
-                          <p className="text-xl font-bold">{finalizedStrategy.result.estimatedTime || '12 min'}</p>
-                          <p className="text-[10px] text-muted-foreground mt-0.5">Est. Time</p>
-                        </div>
-                        <div className="text-center p-3 rounded-lg bg-emerald-950/30 border border-emerald-500/20">
-                          <Badge className={cn(
-                            "text-xs",
-                            (finalizedStrategy.result.riskLevel || 'Low') === 'Low' && 'bg-emerald-500/20 text-emerald-400',
-                            (finalizedStrategy.result.riskLevel || 'Low') === 'Medium' && 'bg-amber-500/20 text-amber-400',
-                            (finalizedStrategy.result.riskLevel || 'Low') === 'High' && 'bg-error/20 text-error'
-                          )}>
-                            {finalizedStrategy.result.riskLevel || 'Low'}
-                          </Badge>
-                          <p className="text-[10px] text-muted-foreground mt-1.5">Risk Level</p>
-                        </div>
+                        {finalizedStrategies.combinedResult.synergies?.length > 0 && (
+                          <div className="mt-3 pt-3 border-t border-emerald-500/20">
+                            <p className="text-[10px] font-medium text-muted-foreground mb-2">Synergy Benefits:</p>
+                            <div className="flex flex-wrap gap-2">
+                              {finalizedStrategies.combinedResult.synergies.map((s: string, i: number) => (
+                                <Badge key={i} variant="outline" className="text-[10px] bg-emerald-950/30 text-emerald-400 border-emerald-500/30">
+                                  {s}
+                                </Badge>
+                              ))}
+                            </div>
+                          </div>
+                        )}
                       </div>
+                    )}
+                    
+                    {/* Individual Strategy Cards */}
+                    <div className="space-y-3">
+                      {finalizedStrategies.strategies.map((strategy, idx) => {
+                        const details = getStrategyDetails(strategy);
+                        const result = finalizedStrategies.individualResults[strategy];
+                        return (
+                          <div key={idx} className="p-4 rounded-lg bg-background/50 border border-emerald-500/20">
+                            <div className="flex items-start justify-between">
+                              <div className="flex-1">
+                                <div className="flex items-center gap-2 mb-2">
+                                  <Badge className="bg-emerald-500/20 text-emerald-400 text-[10px]">{idx + 1}</Badge>
+                                  <h4 className="font-semibold text-foreground text-sm">{details.title}</h4>
+                                </div>
+                                <p className="text-xs text-muted-foreground line-clamp-2">{strategy}</p>
+                              </div>
+                              {result && (
+                                <div className="flex items-center gap-3 text-xs">
+                                  <span className="text-success font-medium">{result.successProbability?.toFixed(0)}%</span>
+                                  <Badge className={cn(
+                                    "text-[10px]",
+                                    result.riskLevel === 'Low' && 'bg-emerald-500/20 text-emerald-400',
+                                    result.riskLevel === 'Medium' && 'bg-amber-500/20 text-amber-400',
+                                    result.riskLevel === 'High' && 'bg-error/20 text-error'
+                                  )}>
+                                    {result.riskLevel}
+                                  </Badge>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
                     
                     <Button onClick={handleExecuteStrategies} className="w-full gap-2 h-10 bg-emerald-600 hover:bg-emerald-700 text-white">
                       <Zap className="h-4 w-4" />
-                      Execute Finalized Strategy
+                      Execute {finalizedStrategies.strategies.length > 1 ? `${finalizedStrategies.strategies.length} Strategies` : 'Strategy'}
                       <ArrowRight className="h-4 w-4" />
                     </Button>
                   </CardContent>
                 </Card>
               )}
 
-              {/* Legacy War Room Simulation Results (fallback if no finalized strategy) */}
-              {warRoomSimulationResults && !warRoomActive && !finalizedStrategy && (
+              {/* Legacy War Room Simulation Results (fallback if no finalized strategies) */}
+              {warRoomSimulationResults && !warRoomActive && !finalizedStrategies && (
                 <Card className="border-success/20 bg-success/5">
                   <CardContent className="p-3 space-y-2">
                     <div className="flex items-center justify-between">
@@ -2000,23 +2153,89 @@ ${activityLog.map(log => `[${log.timestamp.toLocaleTimeString()}] [${log.categor
                     <Target className="h-4 w-4 text-primary" />
                     AI Strategies - Simulate & Apply
                   </h3>
-                  {warRoomActive && appliedStrategy && (
+                  {warRoomActive && appliedStrategies.length > 0 && (
                     <Badge className="bg-emerald-500 text-white text-xs px-3 py-1">
                       <CheckCircle className="h-3 w-3 mr-1.5" />
-                      1 Strategy Applied
+                      {appliedStrategies.length} {appliedStrategies.length > 1 ? 'Strategies' : 'Strategy'} Applied
                     </Badge>
                   )}
                 </div>
 
                 {warRoomActive ? (
                   <div className="space-y-3">
+                    {/* Multi-Strategy Simulation Button */}
+                    {appliedStrategies.length > 0 && (
+                      <div className="flex items-center gap-3 p-3 rounded-lg bg-primary/5 border border-primary/30">
+                        <Button
+                          size="sm"
+                          onClick={handleSimulateMultipleStrategies}
+                          disabled={isSimulatingCombined || appliedStrategies.length === 0}
+                          className="gap-2 h-9"
+                        >
+                          {isSimulatingCombined ? (
+                            <><Loader2 className="h-4 w-4 animate-spin" />Simulating Combined...</>
+                          ) : (
+                            <><Play className="h-4 w-4" />Simulate {appliedStrategies.length} Selected Together</>
+                          )}
+                        </Button>
+                        <span className="text-xs text-muted-foreground">
+                          Run combined simulation to see synergy effects
+                        </span>
+                      </div>
+                    )}
+
+                    {/* Combined Simulation Results */}
+                    {combinedSimulationResult && (
+                      <div className="p-4 rounded-lg bg-gradient-to-r from-primary/10 to-emerald-950/20 border border-primary/30">
+                        <div className="flex items-center gap-2 mb-3">
+                          <Zap className="h-4 w-4 text-primary" />
+                          <span className="text-sm font-semibold">Combined Strategy Results</span>
+                          <Badge variant="outline" className="ml-auto text-[10px]">{combinedSimulationResult.strategies.length} strategies</Badge>
+                        </div>
+                        <div className="grid grid-cols-4 gap-3 mb-3">
+                          <div className="text-center p-3 rounded-lg bg-background/50 border border-success/20">
+                            <p className="text-2xl font-bold text-success">{combinedSimulationResult.combinedSuccess.toFixed(1)}%</p>
+                            <p className="text-[10px] text-muted-foreground">Combined Success</p>
+                          </div>
+                          <div className="text-center p-3 rounded-lg bg-background/50 border border-primary/20">
+                            <p className="text-2xl font-bold text-primary">{combinedSimulationResult.combinedRecovery}</p>
+                            <p className="text-[10px] text-muted-foreground">Recovery</p>
+                          </div>
+                          <div className="text-center p-3 rounded-lg bg-background/50 border border-border/30">
+                            <p className="text-2xl font-bold">{combinedSimulationResult.combinedTime}</p>
+                            <p className="text-[10px] text-muted-foreground">Est. Time</p>
+                          </div>
+                          <div className="text-center p-3 rounded-lg bg-background/50 border border-border/30">
+                            <Badge className={cn(
+                              "text-xs",
+                              combinedSimulationResult.overallRisk === 'Low' && 'bg-success/20 text-success',
+                              combinedSimulationResult.overallRisk === 'Medium' && 'bg-amber-500/20 text-amber-400',
+                              combinedSimulationResult.overallRisk === 'High' && 'bg-error/20 text-error'
+                            )}>
+                              {combinedSimulationResult.overallRisk}
+                            </Badge>
+                            <p className="text-[10px] text-muted-foreground mt-1">Risk</p>
+                          </div>
+                        </div>
+                        {combinedSimulationResult.synergies.length > 0 && (
+                          <div className="flex flex-wrap gap-2">
+                            {combinedSimulationResult.synergies.map((s, i) => (
+                              <Badge key={i} variant="outline" className="text-[10px] bg-primary/10 text-primary border-primary/30">
+                                ✓ {s}
+                              </Badge>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
+
                     {/* All Strategy Cards - Show ALL recommendations */}
-                    <div className="grid grid-cols-1 gap-3 max-h-[400px] overflow-y-auto pr-1">
+                    <div className="grid grid-cols-1 gap-3 max-h-[350px] overflow-y-auto pr-1">
                       {alert.details.aiRecommendations.map((rec, i) => {
                         const details = getStrategyDetails(rec);
                         const strategyResult = perStrategyResults[rec];
                         const isSimulated = strategyResult?.simulated;
-                        const isApplied = appliedStrategy === rec;
+                        const isApplied = appliedStrategies.includes(rec);
                         const isSimulating = simulatingStrategy === rec;
                         
                         return (
@@ -2077,7 +2296,7 @@ ${activityLog.map(log => `[${log.timestamp.toLocaleTimeString()}] [${log.categor
                                   size="sm"
                                   variant={isSimulated ? "outline" : "default"}
                                   onClick={(e) => { e.stopPropagation(); handleSimulateSingleStrategy(rec); }}
-                                  disabled={isSimulating || !!simulatingStrategy}
+                                  disabled={isSimulating || !!simulatingStrategy || isSimulatingCombined}
                                   className="h-8 px-3 text-xs gap-1.5 w-24"
                                 >
                                   {isSimulating ? (
@@ -2094,15 +2313,13 @@ ${activityLog.map(log => `[${log.timestamp.toLocaleTimeString()}] [${log.categor
                                     size="sm"
                                     variant={isApplied ? "destructive" : "outline"}
                                     onClick={(e) => { e.stopPropagation(); handleApplyStrategy(rec); }}
-                                    disabled={appliedStrategy !== null && !isApplied}
                                     className={cn(
                                       "h-8 px-3 text-xs gap-1.5 w-24",
-                                      isApplied && "bg-emerald-600 hover:bg-emerald-700 text-white",
-                                      !isApplied && appliedStrategy && "opacity-50"
+                                      isApplied && "bg-emerald-600 hover:bg-emerald-700 text-white"
                                     )}
                                   >
                                     {isApplied ? (
-                                      <><X className="h-3 w-3" />Unapply</>
+                                      <><X className="h-3 w-3" />Remove</>
                                     ) : (
                                       <><CheckCircle className="h-3 w-3" />Apply</>
                                     )}
@@ -2115,15 +2332,29 @@ ${activityLog.map(log => `[${log.timestamp.toLocaleTimeString()}] [${log.categor
                       })}
                     </div>
 
-                    {/* Applied Strategy Summary */}
-                    {appliedStrategy && (
+                    {/* Applied Strategies Summary */}
+                    {appliedStrategies.length > 0 && (
                       <div className="p-4 rounded-lg border-2 border-emerald-500/50 bg-gradient-to-r from-emerald-950/40 to-transparent">
-                        <div className="flex items-center gap-2 mb-2">
-                          <CheckCircle className="h-5 w-5 text-emerald-400" />
-                          <h4 className="text-sm font-semibold text-emerald-400">Applied Strategy</h4>
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-2">
+                            <CheckCircle className="h-5 w-5 text-emerald-400" />
+                            <h4 className="text-sm font-semibold text-emerald-400">
+                              {appliedStrategies.length} {appliedStrategies.length > 1 ? 'Strategies' : 'Strategy'} Selected
+                            </h4>
+                          </div>
                         </div>
-                        <p className="text-sm font-medium text-foreground mb-1">{getStrategyDetails(appliedStrategy).title}</p>
-                        <p className="text-xs text-muted-foreground">This strategy will be finalized when you end the War Room session.</p>
+                        <div className="space-y-1 mb-3">
+                          {appliedStrategies.map((s, i) => (
+                            <p key={i} className="text-xs text-foreground/80">
+                              {i + 1}. {getStrategyDetails(s).title}
+                            </p>
+                          ))}
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          {combinedSimulationResult 
+                            ? 'Combined simulation complete. End War Room to finalize.'
+                            : 'Run combined simulation or end War Room to finalize.'}
+                        </p>
                       </div>
                     )}
                   </div>
